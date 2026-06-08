@@ -1,0 +1,2794 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Triage — OPD ประกันสังคม รพ.พระนครศรีอยุธยา</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --red:#C0392B;--red-bg:#FDEDEC;--red-b:#E74C3C;
+  --orange:#D35400;--orange-bg:#FDF2E9;--orange-b:#E67E22;
+  --yellow:#B7950B;--yellow-bg:#FEF9E7;--yellow-b:#F1C40F;
+  --green:#1A8040;--green-bg:#EAFAF1;--green-b:#27AE60;
+  --blue:#3498DB;--blue-bg:#EAF4FB;--blue-b:#85C1E9;
+  --navy:#1B2A4A;--navy2:#2E4A7A;--navy3:#4A6FA5;
+  --sso:#1565C0;--sso-bg:#E3F2FD;--sso-b:#42A5F5;
+  --surf:#F8FAFC;--card:#FFFFFF;--bdr:#DEE6EF;
+  --txt:#1B2A4A;--muted:#5A6B85;
+  --font:'Sarabun',sans-serif;--mono:'IBM Plex Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--font);background:var(--surf);color:var(--txt);min-height:100vh;font-size:15px;line-height:1.6;}
+
+.hdr{background:var(--navy);color:#fff;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(27,42,74,.2);}
+.hdr-top{display:flex;align-items:center;gap:12px;padding:9px 20px;border-bottom:1px solid rgba(255,255,255,.1);flex-wrap:wrap;}
+.hdr-badge{background:var(--blue);border-radius:6px;padding:3px 9px;font-size:10px;font-weight:700;letter-spacing:1.2px;font-family:var(--mono);}
+.hdr-sso{background:var(--sso-bg);color:var(--sso);border:1px solid var(--sso-b);border-radius:20px;padding:2px 9px;font-size:11px;font-weight:700;}
+.hdr-title{font-size:15px;font-weight:600;flex:1;}
+.hdr-sub{font-size:10px;color:rgba(255,255,255,.5);}
+.pulse-dot{width:7px;height:7px;border-radius:50%;background:#2ECC71;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(46,204,113,.25);}50%{box-shadow:0 0 0 6px rgba(46,204,113,.08);}}
+.hdr-bar{display:flex;align-items:center;gap:16px;padding:4px 20px;font-size:10px;color:rgba(255,255,255,.5);font-family:var(--mono);}
+.sh-status{display:flex;align-items:center;gap:5px;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;}
+.sh-ok{background:rgba(46,204,113,.15);color:#2ECC71;}
+.sh-warn{background:rgba(241,196,15,.15);color:#F1C40F;}
+
+/* MODAL */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;display:flex;align-items:center;justify-content:center;}
+.modal-ov.hidden{display:none;}
+.modal{background:#fff;border-radius:12px;padding:24px;width:500px;max-width:95vw;max-height:90vh;overflow-y:auto;}
+.modal h2{font-size:17px;font-weight:700;margin-bottom:6px;}
+.modal-desc{font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.6;}
+.modal-step{background:var(--surf);border:1px solid var(--bdr);border-radius:8px;padding:12px;margin-bottom:10px;}
+.step-num{font-size:10px;font-weight:700;color:var(--blue);font-family:var(--mono);margin-bottom:4px;letter-spacing:.5px;}
+.code-block{background:#1E2D40;color:#A8C7E8;border-radius:6px;padding:10px;font-family:var(--mono);font-size:10px;line-height:1.7;overflow-x:auto;margin-top:6px;white-space:pre;}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:380px 1fr;}
+.left{background:var(--card);border-right:1px solid var(--bdr);height:calc(100vh - 74px);position:sticky;top:74px;overflow-y:auto;display:flex;flex-direction:column;}
+.right{padding:18px;overflow-y:auto;display:flex;flex-direction:column;gap:14px;min-height:calc(100vh - 74px);}
+
+/* STAT ROW */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);background:#EFF3F9;border-bottom:1px solid var(--bdr);}
+.stat-cell{padding:8px 11px;border-right:1px solid var(--bdr);font-size:10px;}
+.stat-cell:last-child{border-right:none;}
+.stat-val{font-size:15px;font-weight:700;color:var(--navy);font-family:var(--mono);}
+.stat-lbl{color:var(--muted);font-size:9px;margin-top:1px;}
+
+/* SECTIONS */
+.sec{padding:14px 16px;border-bottom:1px solid var(--bdr);}
+.sec-lbl{font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:9px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.fl{display:flex;flex-direction:column;gap:3px;}
+.lbl{font-size:11px;color:var(--muted);font-weight:500;}
+input,select,textarea{font-family:var(--font);font-size:13px;padding:7px 9px;border:1px solid var(--bdr);border-radius:6px;background:var(--surf);color:var(--txt);width:100%;transition:border-color .2s;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue);background:#fff;}
+textarea{resize:vertical;min-height:65px;}
+
+/* INSURANCE BUTTONS */
+.ins-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;}
+.ins-btn{border:1.5px solid var(--bdr);border-radius:6px;padding:6px 4px;font-size:11px;font-weight:600;text-align:center;cursor:pointer;transition:all .15s;background:var(--surf);color:var(--muted);user-select:none;}
+.ins-btn:hover{border-color:var(--blue);}
+.i-sso{border-color:var(--sso)!important;background:var(--sso-bg)!important;color:var(--sso)!important;}
+.i-uc{border-color:#2E7D32!important;background:#E8F5E9!important;color:#2E7D32!important;}
+.i-wc{border-color:#6A1B9A!important;background:#F3E5F5!important;color:#6A1B9A!important;}
+.i-govt{border-color:#E65100!important;background:#FFF3E0!important;color:#E65100!important;}
+.i-self{border-color:#424242!important;background:#F5F5F5!important;color:#424242!important;}
+.i-other{border-color:var(--muted)!important;}
+
+/* VITALS */
+.vg{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.vc{background:var(--surf);border:1px solid var(--bdr);border-radius:7px;padding:7px 9px;}
+.vn{font-size:9px;color:var(--muted);font-weight:600;letter-spacing:.3px;margin-bottom:3px;}
+.vr{display:flex;align-items:center;gap:3px;}
+.vr input{flex:1;min-width:0;}
+.vu{font-size:9px;color:var(--muted);white-space:nowrap;}
+.vf{font-size:9px;font-weight:700;margin-top:2px;}
+.vf.warn{color:var(--orange);}.vf.crit{color:var(--red);}.vf.ok{color:var(--green);}
+
+/* SYMPTOMS */
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+.sym{display:flex;align-items:center;gap:5px;padding:5px 7px;border:1px solid var(--bdr);border-radius:5px;cursor:pointer;font-size:12px;transition:all .15s;background:var(--surf);user-select:none;}
+.sym:hover{border-color:var(--blue);background:#EEF4FB;}
+.sym.active{border-color:var(--red-b);background:var(--red-bg);color:var(--red);}
+.sym input{display:none;}
+
+/* BTN */
+.btn-ai{background:var(--navy);color:#fff;border:none;padding:11px;border-radius:7px;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .2s;}
+.btn-ai:hover{background:var(--navy2);}
+.btn-ai.loading{background:var(--navy3);cursor:not-allowed;}
+.btn{font-family:var(--font);font-size:13px;font-weight:600;padding:8px 14px;border-radius:6px;border:none;cursor:pointer;transition:all .2s;}
+.btn-p{background:var(--navy);color:#fff;}.btn-p:hover{background:var(--navy2);}
+.btn-g{background:transparent;color:var(--muted);border:1px solid var(--bdr);}.btn-g:hover{background:var(--surf);}
+.btn-s{background:#0F9D58;color:#fff;}.btn-s:hover{background:#0B7F46;}
+.btn-s.saving{background:#888;cursor:not-allowed;}
+
+/* QUEUE */
+.ql{display:flex;flex-direction:column;gap:4px;}
+.qi{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:5px;font-size:11px;background:var(--surf);border:1px solid var(--bdr);}
+.qd{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.ql1{background:var(--red);}.ql2{background:var(--orange);}.ql3{background:var(--yellow);}.ql4{background:var(--green);}.ql5{background:var(--blue);}
+.qn{flex:1;font-weight:600;}.qc{flex:1.4;color:var(--muted);}
+.qt{font-family:var(--mono);font-size:9px;color:var(--muted);}
+.qb-sso{background:var(--sso-bg);color:var(--sso);border-radius:10px;padding:1px 5px;font-size:8px;font-weight:700;}
+.qb-uc{background:#E8F5E9;color:#2E7D32;border-radius:10px;padding:1px 5px;font-size:8px;font-weight:700;}
+
+/* RIGHT STATES */
+.welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:380px;gap:12px;color:var(--muted);text-align:center;}
+.proc{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:380px;gap:16px;}
+.proc.on{display:flex;}
+.sw{position:relative;width:68px;height:68px;}
+.sr{position:absolute;inset:0;border-radius:50%;border:2px solid transparent;animation:spin 1.2s linear infinite;}
+.sr:nth-child(1){border-top-color:var(--red);animation-duration:1s;}
+.sr:nth-child(2){border-right-color:#8E44AD;animation-duration:1.4s;inset:8px;}
+.sr:nth-child(3){border-bottom-color:var(--blue);animation-duration:1.8s;inset:16px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.ps{display:flex;flex-direction:column;gap:6px;width:250px;}
+.ps-item{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);opacity:.35;transition:opacity .3s;}
+.ps-item.on{opacity:1;color:var(--txt);}.ps-item.dn{opacity:.7;color:var(--green);}
+.pd{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;}
+
+/* RESULTS */
+.res{display:none;}
+.res.on{display:flex;flex-direction:column;gap:14px;animation:fi .4s ease;}
+@keyframes fi{from{opacity:0;transform:translateY(7px);}to{opacity:1;transform:translateY(0);}}
+
+/* TRIAGE BANNER */
+.tb{border-radius:10px;padding:16px 18px;display:flex;align-items:center;gap:14px;border:2px solid;}
+.tb.l1{background:var(--red-bg);border-color:var(--red-b);}
+.tb.l2{background:var(--orange-bg);border-color:var(--orange-b);}
+.tb.l3{background:var(--yellow-bg);border-color:var(--yellow-b);}
+.tb.l4{background:var(--green-bg);border-color:var(--green-b);}
+.tb.l5{background:var(--blue-bg);border-color:var(--blue-b);}
+.tc{width:56px;height:56px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;color:#fff;}
+.l1 .tc{background:var(--red);}.l2 .tc{background:var(--orange);}.l3 .tc{background:var(--yellow);}.l4 .tc{background:var(--green);}.l5 .tc{background:var(--blue);}
+.tn{font-size:20px;font-weight:700;line-height:1;}.tv{font-size:8px;font-weight:700;letter-spacing:.5px;}
+.ti{flex:1;}.tna{font-size:17px;font-weight:700;}.tt{font-size:11px;margin-top:2px;font-weight:500;}
+.tcf{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11px;color:var(--muted);}
+.cb{flex:1;height:5px;background:rgba(0,0,0,.08);border-radius:3px;overflow:hidden;}
+.cf{height:100%;border-radius:3px;transition:width .8s ease;}
+.l1 .cf{background:var(--red);}.l2 .cf{background:var(--orange);}.l3 .cf{background:var(--yellow);}.l4 .cf{background:var(--green);}.l5 .cf{background:var(--blue);}
+
+/* SSO BANNER */
+.sso-bar{background:var(--sso-bg);border:1px solid var(--sso-b);border-radius:8px;padding:9px 13px;display:flex;align-items:center;gap:9px;font-size:12px;}
+.sso-title{font-weight:700;color:var(--sso);}
+.sso-det{font-size:10px;color:var(--muted);}
+.sso-badge{display:inline-flex;align-items:center;gap:3px;background:var(--sso-bg);color:var(--sso);border:1px solid var(--sso-b);border-radius:20px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:5px;}
+
+/* TABS */
+.tabs{display:flex;border-bottom:1px solid var(--bdr);background:var(--card);}
+.tab{padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);transition:all .2s;}
+.tab.on{color:var(--navy);border-bottom-color:var(--navy);}
+.tab:hover{color:var(--navy);}
+.tc-wrap{display:none;padding:14px 16px;flex-direction:column;gap:11px;}
+.tc-wrap.on{display:flex;}
+
+/* VITALS SUMMARY */
+.vs{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+.vs-i{font-size:12px;padding:6px 8px;background:var(--surf);border-radius:5px;border:1px solid var(--bdr);}
+.vs-l{color:var(--muted);font-size:9px;}
+.vs-v{font-weight:600;font-family:var(--mono);}
+.vs-v.warn{color:var(--orange);}.vs-v.crit{color:var(--red);}.vs-v.ok{color:var(--green);}
+
+/* ACTIONS */
+.al{display:flex;flex-direction:column;gap:6px;}
+.ai-r{display:flex;align-items:flex-start;gap:8px;font-size:12px;padding:7px 9px;border-radius:6px;background:var(--surf);border:1px solid var(--bdr);}
+.ai-ico{font-size:14px;margin-top:1px;flex-shrink:0;}
+.ai-txt{flex:1;line-height:1.5;}
+.ai-pri{font-size:9px;font-weight:700;padding:2px 5px;border-radius:3px;text-transform:uppercase;white-space:nowrap;}
+.pu{background:var(--red-bg);color:var(--red);}.ps2{background:var(--orange-bg);color:var(--orange);}.pr{background:var(--green-bg);color:var(--green);}
+.flags{display:flex;flex-wrap:wrap;gap:4px;padding:9px 13px;border-top:1px solid var(--bdr);}
+.flag{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:500;}
+.fr{background:var(--red-bg);color:var(--red);}.fo{background:var(--orange-bg);color:var(--orange);}.fg{background:#F0F2F5;color:var(--muted);}
+
+/* PARALLEL MODEL */
+.pg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;}
+.mc{background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:11px;position:relative;overflow:hidden;}
+.mc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.mc.xg::before{background:#E74C3C;}.mc.sb::before{background:#8E44AD;}.mc.en::before{background:var(--blue);}
+.mn{font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:5px;font-family:var(--mono);}
+.ml{font-size:24px;font-weight:700;line-height:1;margin-bottom:1px;}
+.ms{font-size:10px;color:var(--muted);}
+.sc-list{display:flex;flex-direction:column;gap:3px;margin-top:7px;}
+.sc-r{display:flex;align-items:center;gap:4px;font-size:9px;}
+.sl{color:var(--muted);min-width:20px;font-family:var(--mono);}
+.sb2{flex:1;height:3px;background:#E8ECF0;border-radius:2px;overflow:hidden;}
+.sf{height:100%;border-radius:2px;}
+.sf1{background:var(--red);}.sf2{background:var(--orange);}.sf3{background:var(--yellow);}.sf4{background:var(--green);}.sf5{background:var(--blue);}
+.sp{color:var(--muted);font-family:var(--mono);min-width:26px;text-align:right;}
+
+/* FEATURE */
+.fl2{display:flex;flex-direction:column;gap:6px;}
+.fr2{display:flex;align-items:center;gap:7px;font-size:11px;}
+.frk{font-family:var(--mono);font-size:9px;color:var(--muted);min-width:16px;}
+.fn{flex:1;}.fb{width:90px;height:4px;background:#E8ECF0;border-radius:2px;overflow:hidden;}
+.ff{height:100%;border-radius:2px;background:var(--blue);transition:width .8s ease .2s;}
+.fp{font-family:var(--mono);font-size:9px;color:var(--muted);min-width:30px;text-align:right;}
+
+/* SIMILAR */
+.sg2{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.sc2{background:var(--surf);border:1px solid var(--bdr);border-radius:6px;padding:8px 10px;font-size:11px;}
+.sc2-c{font-weight:600;margin-bottom:3px;font-size:12px;}.sc2-m{color:var(--muted);font-size:9px;}
+.sc2-s{display:inline-block;background:#EEF4FB;color:var(--navy2);border-radius:3px;padding:1px 5px;font-family:var(--mono);font-size:9px;margin-top:3px;}
+
+/* SAVE PANEL */
+.sp-card{background:var(--card);border:1px solid var(--bdr);border-radius:10px;overflow:hidden;}
+.sp-hdr{padding:11px 14px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:8px;}
+.sp-body{padding:12px 14px;display:flex;flex-direction:column;gap:9px;}
+.sp-g{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.sp-status{font-size:11px;padding:7px 11px;border-radius:6px;display:none;}
+.sp-status.ok{display:block;background:var(--green-bg);color:var(--green);}
+.sp-status.err{display:block;background:var(--red-bg);color:var(--red);}
+.sp-status.saving{display:block;background:var(--blue-bg);color:var(--blue);}
+
+/* SEC TITLE */
+.stitle{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:9px;display:flex;align-items:center;gap:7px;}
+.stitle::after{content:'';flex:1;height:1px;background:var(--bdr);}
+.disc{font-size:10px;color:var(--muted);text-align:center;padding:7px;border-top:1px solid var(--bdr);}
+
+/* ══ MOBILE BOTTOM NAV ══ */
+.mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;background:var(--navy);border-top:1px solid rgba(255,255,255,.12);padding:0;safe-area-inset-bottom:env(safe-area-inset-bottom);}
+.mob-nav-inner{display:flex;padding-bottom:env(safe-area-inset-bottom,0px);}
+.mnb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px;color:rgba(255,255,255,.5);font-size:9px;font-weight:600;letter-spacing:.3px;cursor:pointer;border:none;background:none;font-family:var(--font);gap:2px;transition:color .15s;}
+.mnb .mico{font-size:20px;line-height:1;}
+.mnb.active{color:#fff;}
+.mnb.active .mico{filter:drop-shadow(0 0 4px rgba(255,255,255,.4));}
+.mob-badge{background:var(--red);color:#fff;border-radius:10px;font-size:8px;font-weight:700;padding:1px 5px;margin-left:2px;display:none;}
+.mob-badge.on{display:inline;}
+
+/* ══ MOBILE PANEL ══ */
+.mob-panel{display:none;}
+
+@media(max-width:840px){
+  /* Layout */
+  .layout{grid-template-columns:1fr;padding-bottom:62px;}
+  .left{height:auto;position:static;border-right:none;}
+  .right{padding:12px;gap:10px;min-height:unset;}
+
+  /* Header compact */
+  .hdr-top{padding:8px 12px;gap:8px;}
+  .hdr-title{font-size:12px;}
+  .hdr-sub{display:none;}
+  .hdr-bar{padding:3px 12px;font-size:9px;gap:8px;}
+  .hdr-bar span:nth-child(7),.hdr-bar span:nth-child(8){display:none;} /* hide XGBoost/SBERT weights */
+  .sh-status{font-size:9px;padding:2px 6px;}
+
+  /* Stat row scrollable */
+  .stat-row{grid-template-columns:repeat(4,1fr);overflow-x:auto;}
+  .stat-cell{min-width:68px;padding:6px 8px;}
+  .stat-val{font-size:13px;}
+
+  /* Forms — bigger touch targets */
+  input,select,textarea{font-size:16px !important;padding:10px 11px;} /* 16px prevents iOS zoom */
+  textarea{min-height:80px;}
+  .g2{grid-template-columns:1fr 1fr;}
+  .vg{grid-template-columns:1fr 1fr;}
+  .ins-grid{grid-template-columns:repeat(3,1fr);}
+  .ins-btn{padding:8px 4px;font-size:11px;}
+
+  /* Symptoms grid */
+  .sg{grid-template-columns:1fr 1fr;}
+  .sym{padding:8px 9px;font-size:13px;}
+
+  /* Submit button */
+  .btn-ai{padding:14px;font-size:15px;}
+
+  /* Vitals summary in results */
+  .vs{grid-template-columns:repeat(3,1fr);}
+  .pg{grid-template-columns:1fr;}
+  .sg2{grid-template-columns:1fr;}
+
+  /* Triage banner */
+  .tb{padding:12px 14px;gap:10px;}
+  .tc{width:48px;height:48px;}
+  .tn{font-size:18px;}
+  .tna{font-size:15px;}
+
+  /* Tabs scroll */
+  .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .tab{white-space:nowrap;padding:8px 14px;font-size:11px;}
+  .tc-wrap{padding:12px;}
+
+  /* Save panel */
+  .sp-g{grid-template-columns:1fr;}
+
+  /* Modal */
+  .modal{padding:16px;border-radius:12px 12px 0 0;position:fixed;bottom:0;left:0;right:0;width:100%;max-height:85vh;max-width:100%;}
+  .modal-ov{align-items:flex-end;}
+
+  /* Bottom nav show */
+  .mob-nav{display:block;}
+
+  /* Left panel hide on mobile (shown via bottom nav tab) */
+  .left{display:none;}
+  .left.mob-show{display:flex;}
+  .right{display:none;}
+  .right.mob-show{display:flex;}
+
+  /* Voice toolbar */
+  .voice-lang{max-width:none;flex:1;}
+  .voice-toolbar{flex-wrap:wrap;}
+
+  /* Score chips */
+  .disc{font-size:9px;padding:10px 12px;margin-bottom:4px;}
+
+  /* Sticky submit — hide bottom sticky border on desktop */
+  #submit-sec{border-top:2px solid var(--bdr);}
+
+  /* Safe area padding for notch phones */
+  .mob-nav-inner{padding-bottom:max(env(safe-area-inset-bottom,0px),4px);}
+  .layout{padding-bottom:env(safe-area-inset-bottom,62px);}
+
+  /* Bigger tap targets for symptoms */
+  .sym{min-height:44px;}
+  .ins-btn{min-height:44px;}
+  .btn-ai{min-height:52px;}
+
+  /* Result panel top padding so content not hidden under header */
+  .right.mob-show{padding-top:8px;}
+}
+
+@media(max-width:400px){
+  .g2{grid-template-columns:1fr;}
+  .vg{grid-template-columns:1fr;}
+  .vs{grid-template-columns:1fr 1fr;}
+  .ins-grid{grid-template-columns:repeat(2,1fr);}
+  .stat-val{font-size:12px;}
+}
+
+/* ══ DROPDOWN MULTISELECT ══ */
+.dms-wrap{position:relative;}
+.dms-trigger{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border:1px solid var(--bdr);border-radius:6px;background:var(--surf);cursor:pointer;font-size:13px;color:var(--txt);user-select:none;min-height:38px;gap:6px;transition:border-color .2s;}
+.dms-trigger:hover,.dms-trigger.open{border-color:var(--blue);}
+.dms-trigger.open{border-radius:6px 6px 0 0;background:#fff;}
+.dms-tags{display:flex;flex-wrap:wrap;gap:3px;flex:1;}
+.dms-tag{background:var(--navy);color:#fff;border-radius:4px;padding:2px 6px;font-size:10px;font-weight:600;display:flex;align-items:center;gap:3px;line-height:1.4;}
+.dms-tag.alert{background:var(--red);}
+.dms-tag .dtx{cursor:pointer;opacity:.7;font-size:11px;line-height:1;}
+.dms-tag .dtx:hover{opacity:1;}
+.dms-placeholder{color:var(--muted);font-size:12px;}
+.dms-arrow{font-size:10px;color:var(--muted);flex-shrink:0;transition:transform .2s;}
+.dms-trigger.open .dms-arrow{transform:rotate(180deg);}
+.dms-panel{display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--blue);border-top:none;border-radius:0 0 8px 8px;z-index:500;box-shadow:0 8px 24px rgba(27,42,74,.15);max-height:300px;overflow-y:auto;}
+.dms-panel.open{display:block;}
+.dms-section{padding:6px 10px 2px;font-size:9px;font-weight:700;letter-spacing:.8px;color:var(--muted);text-transform:uppercase;border-top:1px solid var(--bdr);margin-top:2px;}
+.dms-section:first-child{border-top:none;margin-top:0;}
+.dms-items{display:grid;grid-template-columns:1fr 1fr;gap:1px;}
+.dms-item{display:flex;align-items:center;gap:7px;padding:7px 10px;font-size:12px;cursor:pointer;transition:background .1s;border-radius:4px;margin:1px 4px;}
+.dms-item:hover{background:var(--surf);}
+.dms-item input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--navy);flex-shrink:0;}
+.dms-item.alert-drug input[type=checkbox]{accent-color:var(--red);}
+.dms-item.alert-drug{color:var(--red);}
+.dms-item.alert-drug .di-ico{font-size:9px;}
+.di-ico{font-size:9px;color:var(--muted);}
+.dms-custom{padding:6px 8px;border-top:1px solid var(--bdr);}
+.dms-custom-row{display:flex;gap:5px;}
+.dms-custom input{flex:1;font-size:12px;padding:5px 8px;border:1px solid var(--bdr);border-radius:5px;background:var(--surf);}
+.dms-custom input:focus{outline:none;border-color:var(--blue);}
+.dms-custom button{padding:5px 10px;border-radius:5px;border:1.5px solid var(--navy);background:var(--navy);color:#fff;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.dms-custom button:hover{background:var(--navy2);}
+
+/* VOICE INPUT */
+.voice-wrap{position:relative;display:flex;flex-direction:column;gap:5px;}
+.voice-toolbar{display:flex;align-items:center;gap:5px;}
+.voice-lang{font-family:var(--font);font-size:11px;padding:4px 7px;border:1px solid var(--bdr);border-radius:5px;background:var(--surf);color:var(--txt);cursor:pointer;flex:1;max-width:180px;}
+.voice-lang:focus{outline:none;border-color:var(--blue);}
+.voice-btn{display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:5px;border:1.5px solid var(--bdr);background:var(--surf);color:var(--muted);font-family:var(--font);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;user-select:none;}
+.voice-btn:hover{border-color:var(--blue);color:var(--blue);}
+.voice-btn.listening{border-color:var(--red);background:var(--red-bg);color:var(--red);animation:vbpulse 1.2s ease-in-out infinite;}
+.voice-btn.listening .vmic{animation:vmic 1.2s ease-in-out infinite;}
+@keyframes vbpulse{0%,100%{box-shadow:0 0 0 0 rgba(192,57,43,.25);}50%{box-shadow:0 0 0 5px rgba(192,57,43,.0);}}
+@keyframes vmic{0%,100%{transform:scale(1);}50%{transform:scale(1.2);}}
+.vmic{font-size:14px;line-height:1;}
+.voice-status{font-size:10px;padding:4px 8px;border-radius:4px;display:none;align-items:center;gap:5px;}
+.voice-status.on{display:flex;}
+.voice-status.rec{background:var(--red-bg);color:var(--red);}
+.voice-status.ok{background:var(--green-bg);color:var(--green);}
+.voice-status.err{background:var(--orange-bg);color:var(--orange);}
+.voice-dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:vdot 1s ease-in-out infinite;}
+.voice-clear{padding:4px 8px;border-radius:4px;border:1px solid var(--bdr);background:none;font-family:var(--font);font-size:10px;color:var(--muted);cursor:pointer;}
+.voice-clear:hover{background:var(--surf);color:var(--red);}
+.nosupport-msg{font-size:10px;color:var(--orange);padding:4px 0;}
+.qsym-btn{background:var(--surf);border:1.5px solid var(--bdr);border-radius:20px;padding:4px 10px;font-size:11px;font-family:var(--font);color:var(--txt);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.qsym-btn:hover{border-color:var(--blue);background:#EEF4FF;color:var(--blue);transform:translateY(-1px);}
+.qsym-btn:active{transform:translateY(0);}
+
+/* ══ PEDIATRIC MODE ══ */
+.ped-banner{background:linear-gradient(135deg,#E8F5E9,#F3E5F5);border:2px solid #81C784;border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:#2E7D32;margin-bottom:2px;}
+.ped-banner.hidden{display:none;}
+.ped-tag{background:#2E7D32;color:#fff;border-radius:20px;padding:2px 8px;font-size:9px;font-weight:700;letter-spacing:.5px;}
+.ped-group{font-size:9px;color:#6A1B9A;font-weight:700;background:#F3E5F5;border-radius:10px;padding:1px 7px;margin-left:4px;}
+
+/* ══ GCS INPUT ══ */
+.gcs-wrap{background:var(--surf);border:1px solid var(--bdr);border-radius:7px;padding:9px 11px;}
+.gcs-title{font-size:9px;font-weight:700;letter-spacing:.5px;color:var(--muted);margin-bottom:7px;display:flex;align-items:center;gap:6px;}
+.gcs-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+.gcs-item{display:flex;flex-direction:column;gap:3px;}
+.gcs-lbl{font-size:9px;color:var(--muted);font-weight:600;}
+.gcs-total-wrap{display:flex;align-items:center;gap:8px;margin-top:6px;padding-top:6px;border-top:1px solid var(--bdr);}
+.gcs-total{font-family:var(--mono);font-size:20px;font-weight:700;}
+.gcs-badge{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;}
+.gcs-15{color:var(--green);}.gcs-b15{background:var(--green-bg);color:var(--green);}
+.gcs-13{color:var(--yellow);}.gcs-b13{background:var(--yellow-bg);color:var(--yellow);}
+.gcs-9{color:var(--orange);}.gcs-b9{background:var(--orange-bg);color:var(--orange);}
+.gcs-crit{color:var(--red);}.gcs-bcrit{background:var(--red-bg);color:var(--red);}
+
+/* ══ PAIN SCALE CHILD ══ */
+.pain-child-wrap{display:none;}
+.pain-child-wrap.show{display:block;}
+.pain-faces{display:flex;gap:4px;margin-top:4px;}
+.pf-btn{flex:1;border:1.5px solid var(--bdr);border-radius:6px;padding:4px 2px;text-align:center;cursor:pointer;font-size:13px;transition:all .15s;background:var(--surf);}
+.pf-btn:hover{border-color:var(--blue);}
+.pf-btn.sel{border-color:var(--red-b);background:var(--red-bg);}
+.pf-val{font-size:9px;font-weight:700;font-family:var(--mono);}
+
+/* ══ MOPH PEDIATRIC TRIAGE ══ */
+.ped-criteria{background:linear-gradient(135deg,#E8F5E9,#E3F2FD);border:1.5px solid #66BB6A;border-radius:9px;padding:10px 13px;font-size:11px;}
+.ped-crit-title{font-size:10px;font-weight:700;color:#1B5E20;margin-bottom:7px;display:flex;align-items:center;gap:5px;}
+.ped-crit-row{display:flex;align-items:flex-start;gap:6px;padding:3px 0;border-bottom:1px solid rgba(0,0,0,.06);}
+.ped-crit-row:last-child{border-bottom:none;}
+.ped-lv-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:2px;}
+.ped-crit-txt{flex:1;font-size:10px;line-height:1.5;color:var(--txt);}
+.ped-crit-label{font-weight:700;font-size:9px;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+
+/* ══ NEWS2 CARD ══ */
+.news-card{border-radius:9px;border:2px solid var(--bdr);overflow:hidden;margin-top:6px;}
+.news-header{padding:8px 12px;display:flex;align-items:center;gap:8px;font-weight:700;font-size:12px;}
+.news-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:8px 10px;}
+.news-param{background:var(--surf);border-radius:6px;padding:5px 7px;font-size:10px;}
+.news-pn{color:var(--muted);font-size:8px;font-weight:600;}
+.news-pv{font-family:var(--mono);font-size:14px;font-weight:700;}
+.news-ps{font-size:8px;}
+.news-total{display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--bdr);}
+.news-score{font-family:var(--mono);font-size:28px;font-weight:800;}
+.news-risk{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+.news-low{color:#2E7D32;background:#E8F5E9;}.news-med{color:#E65100;background:#FFF3E0;}.news-high{color:#B71C1C;background:#FFEBEE;}
+
+/* ══ ALERT CARDS ══ */
+.alert-card{border-radius:9px;overflow:hidden;margin-top:6px;}
+.alert-hd{padding:9px 13px;display:flex;align-items:center;gap:8px;font-weight:700;font-size:12px;}
+.alert-body{padding:8px 13px;font-size:11px;line-height:1.6;}
+.alert-red{border:2px solid #EF5350;}.alert-red .alert-hd{background:#FFEBEE;color:#B71C1C;}
+.alert-orange{border:2px solid #FF9800;}.alert-orange .alert-hd{background:#FFF3E0;color:#E65100;}
+.alert-blue{border:2px solid #1976D2;}.alert-blue .alert-hd{background:#E3F2FD;color:#0D47A1;}
+.alert-ekg{border:2px solid #C62828;background:linear-gradient(135deg,#FFEBEE,#FFF8E1);}
+.alert-ekg .alert-hd{background:#C62828;color:#fff;}
+.alert-row{display:flex;align-items:flex-start;gap:7px;margin:3px 0;}
+.alert-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.cr-pos{color:#2E7D32;font-weight:700;}.cr-neg{color:var(--muted);}
+.fast-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:5px;}
+.fast-item{border-radius:6px;padding:6px 9px;font-size:10px;}
+.fast-pos{background:#FFEBEE;border:1px solid #EF9A9A;}
+.fast-neg{background:#F5F5F5;border:1px solid var(--bdr);}
+</style>
+</head>
+<body>
+
+<!-- MODAL -->
+<div class="modal-ov" id="modal">
+  <div class="modal">
+    <h2>⚙️ ตั้งค่า Google Sheets</h2>
+    <p class="modal-desc">บันทึกข้อมูล Triage ไปยัง Google Sheets ของแผนก — ตั้งค่าครั้งเดียว บันทึกในเบราว์เซอร์</p>
+
+    <div class="modal-step">
+      <div class="step-num">STEP 1 — สร้าง Google Apps Script</div>
+      <p style="font-size:12px;margin:4px 0 6px;">เปิด <a href="https://script.google.com" target="_blank" style="color:var(--blue)">script.google.com</a> → New Project → วาง code นี้ลงใน Code.gs:</p>
+      <div class="code-block">function doPost(e){
+  var ss=SpreadsheetApp.openById('<span style="color:#F9A825">1JBMCmcQVKYXoR6hYWzLp6xD11OOg6Ax8O2Q9bBFw9P4</span>');
+  var sh=ss.getSheetByName('Triage')||ss.insertSheet('Triage');
+  var d=JSON.parse(e.postData.contents);
+  if(sh.getLastRow()===0) sh.appendRow([
+    'วันที่','เวลา','HN','ชื่อ','อายุ','เพศ','สิทธิ์',
+    'CC','Vital Score','Danger','Triage Level','ชื่อ Level',
+    'Confidence%','XGBoost','SBERT','พยาบาล','หมายเหตุ'
+  ]);
+  sh.appendRow([d.date,d.time,d.hn,d.name,d.age,d.sex,
+    d.ins,d.cc,d.vs,d.ds,d.lv,d.lvn,d.conf,
+    d.xgb,d.sbert,d.nurse,d.note]);
+  return ContentService
+    .createTextOutput(JSON.stringify({ok:true}))
+    .setMimeType(ContentService.MimeType.JSON);
+}</div>
+    </div>
+
+    <div class="modal-step">
+      <div class="step-num">STEP 2 — Deploy เป็น Web App</div>
+      <p style="font-size:12px;margin:4px 0;">Deploy → New deployment → Type: <strong>Web app</strong><br>Execute as: <strong>Me</strong> · Access: <strong>Anyone</strong> → Copy URL</p>
+    </div>
+
+    <div class="modal-step">
+      <div class="step-num">STEP 3 — กรอกข้อมูล</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+        <div class="fl"><label class="lbl">Apps Script Web App URL (จาก Deploy)</label>
+          <input type="text" id="cfg-url" placeholder="https://script.google.com/macros/s/AKfy.../exec"/>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div class="fl"><label class="lbl">Google Sheet ID</label>
+            <input type="text" id="cfg-sid" placeholder="1BxiMVs0XRA5..."/>
+          </div>
+          <div class="fl"><label class="lbl">ชื่อพยาบาล / รหัส</label>
+            <input type="text" id="cfg-nurse" placeholder="น.ส. / พย."/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:7px;margin-top:8px;">
+      <button class="btn btn-g" onclick="skipSetup()">ข้ามก่อน</button>
+      <button class="btn btn-p" style="flex:1" onclick="saveConfig()">💾 บันทึกการตั้งค่า</button>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-top">
+    <span class="hdr-badge">AI·TRIAGE</span>
+    <span class="hdr-sso">🚨 ER + OPD</span>
+    <div style="flex:1">
+      <div class="hdr-title">ระบบ Triage โรงพยาบาลพระนครศรีอยุธยา</div>
+      <div class="hdr-sub">XGBoost + Multilingual SBERT · GCS · MOPH Ped Criteria · ESI · บันทึก Google Sheets</div>
+    </div>
+    <div class="sh-status" id="sh-st"><span>●</span><span id="sh-lbl">ยังไม่เชื่อม</span></div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,.55);">
+      <div class="pulse-dot"></div><span>พร้อมใช้งาน</span>
+    </div>
+    <button class="btn btn-g" style="font-size:10px;color:rgba(255,255,255,.65);border-color:rgba(255,255,255,.2);padding:4px 9px;" onclick="openSetup()">⚙️ ตั้งค่า</button>
+  </div>
+  <div class="hdr-bar">
+    <span id="dt-now">—</span>
+    <span>|</span><span>พยาบาล: <strong id="hdr-nurse" style="color:rgba(255,255,255,.8)">—</strong></span>
+    <span>|</span><span id="today-cnt">ผู้ป่วยวันนี้: 0 ราย</span>
+    <span>|</span><span>XGBoost 0.55 · SBERT 0.45</span>
+  </div>
+</div>
+
+<div class="layout">
+<!-- ════ LEFT ════ -->
+<div class="left">
+  <div class="stat-row">
+    <div class="stat-cell"><div class="stat-val">82.3%</div><div class="stat-lbl">Accuracy</div></div>
+    <div class="stat-cell"><div class="stat-val">0.665</div><div class="stat-lbl">F1-Score</div></div>
+    <div class="stat-cell"><div class="stat-val">0.901</div><div class="stat-lbl">AUC-ROC</div></div>
+    <div class="stat-cell"><div class="stat-val" id="s-today">0</div><div class="stat-lbl">วันนี้</div></div>
+  </div>
+
+  <!-- Patient -->
+  <div class="sec">
+    <div class="sec-lbl">🪪 ข้อมูลผู้ป่วย</div>
+    <!-- Pediatric Banner -->
+    <div class="ped-banner hidden" id="ped-banner">
+      <span style="font-size:16px;">👶</span>
+      <span>โหมดเด็ก (Pediatric)</span>
+      <span class="ped-tag">MOPH + ESI</span>
+      <span class="ped-group" id="ped-group-label"></span>
+      <span style="font-size:9px;color:#4A148C;margin-left:auto;">Danger Zone: ESI v4 Fig.6-1 + MOPH 2561</span>
+    </div>
+    <div class="g2">
+      <div class="fl"><label class="lbl">HN</label><input type="text" id="hn" placeholder="6500001"/></div>
+      <div class="fl"><label class="lbl">อายุ (ปี)</label><input type="number" id="age" placeholder="อายุ" min="0" max="120" oninput="onAgeChange()"/></div>
+      <div class="fl"><label class="lbl">ชื่อ-สกุล</label><input type="text" id="ptname" placeholder="ชื่อ นามสกุล"/></div>
+      <div class="fl"><label class="lbl">เพศ</label>
+        <select id="sex"><option value="">เลือก</option><option value="M">ชาย</option><option value="F">หญิง</option></select>
+      </div>
+      <div class="fl" style="grid-column:1/-1">
+        <label class="lbl">โรคประจำตัว</label>
+        <!-- Dropdown checkbox: โรคประจำตัว -->
+        <div class="dms-wrap" id="dms-dx">
+          <div class="dms-trigger" id="dms-dx-trigger" onclick="dmsTog('dx')">
+            <div class="dms-tags" id="dms-dx-tags"><span class="dms-placeholder">เลือกโรคประจำตัว...</span></div>
+            <span class="dms-arrow">▼</span>
+          </div>
+          <div class="dms-panel" id="dms-dx-panel">
+            <div class="dms-section">โรคหัวใจและหลอดเลือด</div>
+            <div class="dms-items">
+              <label class="dms-item"><input type="checkbox" value="HT" onchange="dmsChange('dx')"> HT <span class="di-ico">ความดัน</span></label>
+              <label class="dms-item"><input type="checkbox" value="DLP" onchange="dmsChange('dx')"> DLP <span class="di-ico">ไขมัน</span></label>
+              <label class="dms-item"><input type="checkbox" value="IHD" onchange="dmsChange('dx')"> IHD <span class="di-ico">หัวใจขาดเลือด</span></label>
+              <label class="dms-item"><input type="checkbox" value="Cardiomegaly" onchange="dmsChange('dx')"> Cardiomegaly</label>
+              <label class="dms-item"><input type="checkbox" value="PostPCI" onchange="dmsChange('dx')"> Post PCI</label>
+              <label class="dms-item"><input type="checkbox" value="CVD อื่นๆ" onchange="dmsChange('dx')"> CVD อื่นๆ</label>
+            </div>
+            <div class="dms-section">ระบบทางเดินหายใจ</div>
+            <div class="dms-items">
+              <label class="dms-item"><input type="checkbox" value="COPD" onchange="dmsChange('dx')"> COPD</label>
+              <label class="dms-item"><input type="checkbox" value="Asthma" onchange="dmsChange('dx')"> Asthma</label>
+            </div>
+            <div class="dms-section">โรคอื่นๆ</div>
+            <div class="dms-items">
+              <label class="dms-item"><input type="checkbox" value="DM" onchange="dmsChange('dx')"> DM <span class="di-ico">เบาหวาน</span></label>
+              <label class="dms-item"><input type="checkbox" value="B24/HIV" onchange="dmsChange('dx')"> B24/HIV</label>
+            </div>
+            <div class="dms-section">โรคไต (CKD)</div>
+            <div class="dms-items">
+              <label class="dms-item"><input type="checkbox" value="CKD1" onchange="dmsChange('dx')"> CKD Stage 1</label>
+              <label class="dms-item"><input type="checkbox" value="CKD2" onchange="dmsChange('dx')"> CKD Stage 2</label>
+              <label class="dms-item"><input type="checkbox" value="CKD3" onchange="dmsChange('dx')"> CKD Stage 3</label>
+              <label class="dms-item"><input type="checkbox" value="CKD4" onchange="dmsChange('dx')"> CKD Stage 4</label>
+              <label class="dms-item"><input type="checkbox" value="CKD5" onchange="dmsChange('dx')"> CKD Stage 5</label>
+              <label class="dms-item"><input type="checkbox" value="ESRD" onchange="dmsChange('dx')"> ESRD <span class="di-ico">ฟอกไต</span></label>
+            </div>
+            <div class="dms-custom">
+              <div style="font-size:9px;color:var(--muted);font-weight:700;margin-bottom:4px;">➕ เพิ่มโรคอื่นๆ</div>
+              <div class="dms-custom-row">
+                <input type="text" id="dms-dx-custom" placeholder="ระบุโรค เช่น Stroke, SLE..." onkeydown="if(event.key==='Enter')dmsAddCustom('dx')"/>
+                <button onclick="dmsAddCustom('dx')">เพิ่ม</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="fl" style="grid-column:1/-1">
+        <label class="lbl">ยาประจำ <span style="font-size:9px;color:var(--red);font-weight:700;">🔴 High Alert Drug</span></label>
+        <!-- Dropdown checkbox: ยาประจำ High Alert -->
+        <div class="dms-wrap" id="dms-med">
+          <div class="dms-trigger" id="dms-med-trigger" onclick="dmsTog('med')">
+            <div class="dms-tags" id="dms-med-tags"><span class="dms-placeholder">เลือกยาประจำ...</span></div>
+            <span class="dms-arrow">▼</span>
+          </div>
+          <div class="dms-panel" id="dms-med-panel">
+            <div class="dms-section" style="color:var(--red);">🔴 Anticoagulants / Antiplatelets</div>
+            <div class="dms-items">
+              <label class="dms-item alert-drug"><input type="checkbox" value="Warfarin" onchange="dmsChange('med')"> Warfarin</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="Heparin" onchange="dmsChange('med')"> Heparin</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="Enoxaparin" onchange="dmsChange('med')"> Enoxaparin</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="Dabigatran" onchange="dmsChange('med')"> Dabigatran</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="Rivaroxaban" onchange="dmsChange('med')"> Rivaroxaban</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="Apixaban" onchange="dmsChange('med')"> Apixaban</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="Aspirin" onchange="dmsChange('med')"> Aspirin</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="Clopidogrel" onchange="dmsChange('med')"> Clopidogrel</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="Ticagrelor" onchange="dmsChange('med')"> Ticagrelor</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="Prasugrel" onchange="dmsChange('med')"> Prasugrel</label>
+            </div>
+            <div class="dms-section" style="color:var(--red);">🔴 Insulin / Antidiabetics</div>
+            <div class="dms-items">
+              <label class="dms-item alert-drug"><input type="checkbox" value="Insulin" onchange="dmsChange('med')"> Insulin</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="Glibenclamide" onchange="dmsChange('med')"> Glibenclamide</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="Glipizide" onchange="dmsChange('med')"> Glipizide</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="Metformin" onchange="dmsChange('med')"> Metformin</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="SGLT2i" onchange="dmsChange('med')"> SGLT2i</label>
+            </div>
+            <div class="dms-section" style="color:var(--red);">🔴 Cardiac Drugs</div>
+            <div class="dms-items">
+              <label class="dms-item alert-drug"><input type="checkbox" value="Digoxin" onchange="dmsChange('med')"> Digoxin</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="Amiodarone" onchange="dmsChange('med')"> Amiodarone</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="Adenosine" onchange="dmsChange('med')"> Adenosine</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="Nitrate" onchange="dmsChange('med')"> Nitrate/NTG</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="Adrenaline" onchange="dmsChange('med')"> Adrenaline/Epi</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="Dopamine" onchange="dmsChange('med')"> Dopamine</label>
+            </div>
+            <div class="dms-section" style="color:var(--red);">🔴 CNS / Opioids</div>
+            <div class="dms-items">
+              <label class="dms-item alert-drug"><input type="checkbox" value="Morphine" onchange="dmsChange('med')"> Morphine</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="Fentanyl" onchange="dmsChange('med')"> Fentanyl</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="Tramadol" onchange="dmsChange('med')"> Tramadol</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="Phenytoin" onchange="dmsChange('med')"> Phenytoin</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="Valproate" onchange="dmsChange('med')"> Valproate</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="Lithium" onchange="dmsChange('med')"> Lithium</label>
+            </div>
+            <div class="dms-section" style="color:var(--red);">🔴 Electrolytes / Others</div>
+            <div class="dms-items">
+              <label class="dms-item alert-drug"><input type="checkbox" value="KCl IV" onchange="dmsChange('med')"> KCl IV</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="MgSO4" onchange="dmsChange('med')"> MgSO4</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="Methotrexate" onchange="dmsChange('med')"> Methotrexate</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="Prednisolone" onchange="dmsChange('med')"> Prednisolone</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="Cyclosporine" onchange="dmsChange('med')"> Cyclosporine</label>
+              <label class="dms-item alert-drug"><input type="checkbox" value="Colchicine" onchange="dmsChange('med')"> Colchicine</label>
+            </div>
+            <div class="dms-section">💊 ยาความดัน / หัวใจทั่วไป</div>
+            <div class="dms-items">
+              <label class="dms-item"><input type="checkbox" value="ACEI" onchange="dmsChange('med')"> ACEI</label>
+              <label class="dms-item"><input type="checkbox" value="ARB" onchange="dmsChange('med')"> ARB</label>
+              <label class="dms-item"><input type="checkbox" value="Beta-blocker" onchange="dmsChange('med')"> Beta-blocker</label>
+              <label class="dms-item"><input type="checkbox" value="CCB" onchange="dmsChange('med')"> CCB</label>
+              <label class="dms-item"><input type="checkbox" value="Statin" onchange="dmsChange('med')"> Statin</label>
+              <label class="dms-item"><input type="checkbox" value="Diuretic" onchange="dmsChange('med')"> Diuretic</label>
+            </div>
+            <div class="dms-custom">
+              <div style="font-size:9px;color:var(--muted);font-weight:700;margin-bottom:4px;">➕ เพิ่มยาอื่นๆ</div>
+              <div class="dms-custom-row">
+                <input type="text" id="dms-med-custom" placeholder="ระบุยา เช่น Allopurinol..." onkeydown="if(event.key==='Enter')dmsAddCustom('med')"/>
+                <button onclick="dmsAddCustom('med')">เพิ่ม</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- hidden input รวมค่าทั้งหมดส่งไป triage -->
+      <input type="hidden" id="ud"/>
+    </div>
+  </div>
+
+  <!-- Insurance -->
+  <div class="sec">
+    <div class="sec-lbl">🪪 สิทธิ์การรักษา</div>
+    <div class="ins-grid">
+      <div class="ins-btn" id="ib-SSO"  onclick="selIns('SSO')">🏢 ประกันสังคม</div>
+      <div class="ins-btn" id="ib-UC"   onclick="selIns('UC')">💚 บัตรทอง (UC)</div>
+      <div class="ins-btn" id="ib-WC"   onclick="selIns('WC')">🟣 กรมบัญชีกลาง</div>
+      <div class="ins-btn" id="ib-GOVT" onclick="selIns('GOVT')">🟠 ข้าราชการ</div>
+      <div class="ins-btn" id="ib-SELF" onclick="selIns('SELF')">⬛ ชำระเอง</div>
+      <div class="ins-btn" id="ib-OTH"  onclick="selIns('OTH')">⬜ อื่นๆ</div>
+    </div>
+    <div id="ins-detail" style="margin-top:7px;display:none;">
+      <div class="fl"><label class="lbl">เลขที่ประกัน / รหัสสิทธิ์</label>
+        <input type="text" id="ins-no" placeholder="เช่น 1234567890"/></div>
+    </div>
+  </div>
+
+  <!-- Chief complaint -->
+  <div class="sec">
+    <div class="sec-lbl">💬 อาการนำ (Chief Complaint)</div>
+    <div class="voice-wrap">
+      <!-- Toolbar: language selector + mic button -->
+      <div class="voice-toolbar">
+        <select id="voice-lang" class="voice-lang" title="เลือกภาษาพูด">
+          <option value="th-TH">🇹🇭 ไทย</option>
+          <option value="en-US">🇺🇸 English (US)</option>
+          <option value="en-GB">🇬🇧 English (UK)</option>
+          <option value="zh-CN">🇨🇳 中文 (普通话)</option>
+          <option value="zh-TW">🇹🇼 中文 (繁體)</option>
+          <option value="ja-JP">🇯🇵 日本語</option>
+          <option value="ko-KR">🇰🇷 한국어</option>
+          <option value="my-MM">🇲🇲 မြန်မာ</option>
+          <option value="km-KH">🇰🇭 ភាសាខ្មែរ</option>
+          <option value="lo-LA">🇱🇦 ລາວ</option>
+          <option value="vi-VN">🇻🇳 Tiếng Việt</option>
+          <option value="ms-MY">🇲🇾 Bahasa Melayu</option>
+          <option value="id-ID">🇮🇩 Bahasa Indonesia</option>
+          <option value="hi-IN">🇮🇳 हिन्दी</option>
+          <option value="ar-SA">🇸🇦 العربية</option>
+          <option value="ru-RU">🇷🇺 Русский</option>
+          <option value="fr-FR">🇫🇷 Français</option>
+          <option value="de-DE">🇩🇪 Deutsch</option>
+          <option value="es-ES">🇪🇸 Español</option>
+        </select>
+        <button class="voice-btn" id="voice-btn" onclick="toggleVoice()" title="กดพูดอาการ">
+          <span class="vmic" id="vmic-ico">🎤</span>
+          <span id="vmic-lbl">พูดอาการ</span>
+        </button>
+        <button class="voice-clear" onclick="clearChief()" title="ล้างข้อความ">✕ ล้าง</button>
+      </div>
+      <!-- Status bar -->
+      <div class="voice-status" id="voice-status">
+        <span class="voice-dot" id="voice-dot"></span>
+        <span id="voice-status-txt">กำลังฟัง...</span>
+      </div>
+      <!-- Textarea -->
+      <textarea id="chief" placeholder="ระบุอาการนำ — พิมพ์หรือกด 🎤 พูดอาการ เช่น ปวดท้องรุนแรง คลื่นไส้อาเจียน มา 3 ชั่วโมง ไข้สูง 39°C" rows="3"></textarea>
+      <div id="voice-nosupport" class="nosupport-msg" style="display:none;">⚠️ เบราว์เซอร์นี้ไม่รองรับ Speech Recognition — กรุณาใช้ Chrome / Edge</div>
+      <!-- Quick symptom buttons -->
+      <div style="margin-top:7px;">
+        <div style="font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.5px;margin-bottom:5px;">⚡ อาการที่พบบ่อย — กดเพื่อเติมอัตโนมัติ</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;">
+          <button class="qsym-btn" onclick="setChief('มาตามนัดเดิม')">📅 มาตามนัดเดิม</button>
+          <button class="qsym-btn" onclick="setChief('ไข้ ไอ เจ็บคอ')">🤒 ไข้ ไอ เจ็บคอ</button>
+          <button class="qsym-btn" onclick="setChief('ท้องเสีย ถ่ายเหลว')">🚽 ท้องเสีย</button>
+          <button class="qsym-btn" onclick="setChief('เวียนหัว บ้านหมุน')">😵 เวียนหัว</button>
+          <button class="qsym-btn" onclick="setChief('ปวดหัว')">🤕 ปวดหัว</button>
+          <button class="qsym-btn" onclick="setChief('ปวดตามร่างกาย ปวดเมื่อย')">💪 ปวดตามร่างกาย</button>
+          <button class="qsym-btn" onclick="setChief('ใจสั่น หัวใจเต้นเร็ว')">💓 ใจสั่น</button>
+          <button class="qsym-btn" onclick="setChief('อ่อนเพลีย ไม่มีแรง')">😩 อ่อนเพลียไม่มีแรง</button>
+          <button class="qsym-btn" onclick="setChief('ปัสสาวะขัด ปัสสาวะแสบ')">🚾 ปัสสาวะขัด</button>
+          <button class="qsym-btn" onclick="setChief('ปวดท้อง')">🤢 ปวดท้อง</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vitals -->
+  <div class="sec">
+    <div class="sec-lbl">📊 Vital Signs</div>
+    <div class="vg">
+      <div class="vc"><div class="vn">ความดันโลหิต</div>
+        <div class="vr"><input type="number" id="sbp" placeholder="Sys" min="0" max="300" oninput="fv()"/>
+        <span class="vu">/</span><input type="number" id="dbp" placeholder="Dia" min="0" max="200" oninput="fv()"/>
+        <span class="vu">mmHg</span></div><div class="vf" id="f-bp"></div>
+      </div>
+      <div class="vc"><div class="vn">ชีพจร (HR)</div>
+        <div class="vr"><input type="number" id="hr" placeholder="bpm" min="0" max="300" oninput="fv()"/>
+        <span class="vu">bpm</span></div><div class="vf" id="f-hr"></div>
+      </div>
+      <div class="vc"><div class="vn">อัตราหายใจ (RR)</div>
+        <div class="vr"><input type="number" id="rr" placeholder="/min" min="0" max="60" oninput="fv()"/>
+        <span class="vu">/min</span></div><div class="vf" id="f-rr"></div>
+      </div>
+      <div class="vc"><div class="vn">อุณหภูมิ</div>
+        <div class="vr"><input type="number" id="temp" placeholder="°C" step="0.1" min="30" max="45" oninput="fv()"/>
+        <span class="vu">°C</span></div><div class="vf" id="f-tmp"></div>
+      </div>
+      <div class="vc"><div class="vn">SpO₂</div>
+        <div class="vr"><input type="number" id="spo2" placeholder="%" min="0" max="100" oninput="fv()"/>
+        <span class="vu">%</span></div><div class="vf" id="f-spo2"></div>
+      </div>
+      <div class="vc"><div class="vn">ความเจ็บปวด (NRS)</div>
+        <div class="vr"><input type="number" id="pain" placeholder="0-10" min="0" max="10" oninput="fv()"/>
+        <span class="vu">/ 10</span></div><div class="vf" id="f-pain"></div>
+        <!-- Wong-Baker สำหรับเด็ก -->
+        <div class="pain-child-wrap" id="pain-child">
+          <div style="font-size:9px;color:var(--muted);margin-top:3px;">😊 Wong-Baker FACES (กด เลือก)</div>
+          <div class="pain-faces">
+            <div class="pf-btn" onclick="selFace(0)"><div>😊</div><div class="pf-val">0</div></div>
+            <div class="pf-btn" onclick="selFace(2)"><div>🙂</div><div class="pf-val">2</div></div>
+            <div class="pf-btn" onclick="selFace(4)"><div>😐</div><div class="pf-val">4</div></div>
+            <div class="pf-btn" onclick="selFace(6)"><div>🙁</div><div class="pf-val">6</div></div>
+            <div class="pf-btn" onclick="selFace(8)"><div>😢</div><div class="pf-val">8</div></div>
+            <div class="pf-btn" onclick="selFace(10)"><div>😭</div><div class="pf-val">10</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GCS -->
+  <div class="sec" id="gcs-sec">
+    <div class="sec-lbl">🧠 Glasgow Coma Scale (GCS)</div>
+    <div class="gcs-wrap">
+      <div class="gcs-title">
+        <span>ประเมินระดับความรู้สึกตัว</span>
+        <span style="font-size:8px;color:var(--muted);font-weight:400;">(ไม่บังคับ — แต่สำคัญมากใน ER)</span>
+      </div>
+      <div class="gcs-grid">
+        <div class="gcs-item">
+          <div class="gcs-lbl">👁 Eye (E) <span style="font-size:8px;">1-4</span></div>
+          <select id="gcs-e" onchange="calcGCS()">
+            <option value="">—</option>
+            <option value="4">4 — เปิดเองได้</option>
+            <option value="3">3 — เปิดเมื่อเรียก</option>
+            <option value="2">2 — เปิดเมื่อเจ็บ</option>
+            <option value="1">1 — ไม่เปิดเลย</option>
+          </select>
+        </div>
+        <div class="gcs-item">
+          <div class="gcs-lbl">💬 Verbal (V) <span style="font-size:8px;">1-5</span></div>
+          <select id="gcs-v" onchange="calcGCS()">
+            <option value="">—</option>
+            <option value="5">5 — พูดรู้เรื่อง</option>
+            <option value="4">4 — พูดสับสน</option>
+            <option value="3">3 — พูดคำเดียว</option>
+            <option value="2">2 —唸 / เสียง</option>
+            <option value="1">1 — ไม่มีเสียง</option>
+          </select>
+        </div>
+        <div class="gcs-item">
+          <div class="gcs-lbl">✋ Motor (M) <span style="font-size:8px;">1-6</span></div>
+          <select id="gcs-m" onchange="calcGCS()">
+            <option value="">—</option>
+            <option value="6">6 — ทำตามคำสั่ง</option>
+            <option value="5">5 — ชี้ตำแหน่งเจ็บ</option>
+            <option value="4">4 — หดหนีเจ็บ</option>
+            <option value="3">3 — งอแขนผิดปกติ</option>
+            <option value="2">2 — เหยียดแขนผิดปกติ</option>
+            <option value="1">1 — ไม่ขยับเลย</option>
+          </select>
+        </div>
+      </div>
+      <div class="gcs-total-wrap">
+        <div>
+          <div style="font-size:9px;color:var(--muted);">GCS รวม</div>
+          <div class="gcs-total" id="gcs-total" style="color:var(--muted);">—</div>
+        </div>
+        <div style="flex:1">
+          <span class="gcs-badge" id="gcs-badge"></span>
+          <div style="font-size:9px;color:var(--muted);margin-top:3px;" id="gcs-interp"></div>
+        </div>
+        <div style="font-size:9px;color:var(--muted);text-align:right;">
+          <div>E<span id="gcs-e-val" style="font-family:var(--mono);color:var(--txt);">—</span> +
+          V<span id="gcs-v-val" style="font-family:var(--mono);color:var(--txt);">—</span> +
+          M<span id="gcs-m-val" style="font-family:var(--mono);color:var(--txt);">—</span></div>
+        </div>
+      </div>
+      <!-- Pediatric GCS note -->
+      <div id="gcs-ped-note" style="display:none;margin-top:5px;font-size:9px;color:#6A1B9A;background:#F3E5F5;border-radius:5px;padding:4px 8px;">
+        👶 เด็ก &lt;2 ปี: Verbal ใช้เกณฑ์ทารก (ร้องปกติ=5, ร้องผิดปกติ=3, 唸เสียง=2) | GCS≤8 = L1 ตาม MOPH
+      </div>
+      <div style="margin-top:5px;font-size:9px;color:var(--muted);font-style:italic;">
+        🔴 GCS≤8 = L1 · 🟠 GCS 9-12 = L2 · 🟡 GCS 13 = L3 <span style="color:#1565C0;font-weight:600;">| ตาม MOPH ED Triage 2561 + ESI v4</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEWS2 Inputs (ฝังกับ Vital Signs แต่แสดงผลหลังประเมิน) -->
+  <div class="sec" id="news2-sec">
+    <div class="sec-lbl">📊 NEWS2 & Clinical Screening</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;font-size:11px;">
+      <div>
+        <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;">Consciousness (AVPU)</div>
+        <select id="news-avpu" class="sel-sm">
+          <option value="A">A — Alert (0)</option>
+          <option value="C">C — Confused (3)</option>
+          <option value="V">V — Voice (3)</option>
+          <option value="P">P — Pain (3)</option>
+          <option value="U">U — Unresponsive (3)</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;">ออกซิเจนเสริม</div>
+        <select id="news-o2" class="sel-sm">
+          <option value="0">Room air (0)</option>
+          <option value="2">O₂ supplement (+2)</option>
+        </select>
+      </div>
+    </div>
+    <!-- Stroke screening -->
+    <div style="margin-top:9px;font-size:9px;font-weight:700;color:#1565C0;letter-spacing:.5px;">🧠 Stroke Fast Track (BE-FAST)</div>
+    <div class="sg" style="margin-top:4px;">
+      <label class="sym" onclick="togSym(this,event)" style="border-color:#90CAF9;"><input type="checkbox" value="fast_balance"> B: เดินเซ/ทรงตัวไม่ได้</label>
+      <label class="sym" onclick="togSym(this,event)" style="border-color:#90CAF9;"><input type="checkbox" value="fast_eyes"> E: ตามัว/มองไม่เห็น</label>
+      <label class="sym" onclick="togSym(this,event)" style="border-color:#90CAF9;"><input type="checkbox" value="fast_face"> F: ปากเบี้ยว/หน้าเบี้ยว</label>
+      <label class="sym" onclick="togSym(this,event)" style="border-color:#90CAF9;"><input type="checkbox" value="fast_arm"> A: แขนอ่อนแรงข้างเดียว</label>
+      <label class="sym" onclick="togSym(this,event)" style="border-color:#90CAF9;"><input type="checkbox" value="fast_speech"> S: พูดไม่ชัด/พูดไม่ได้</label>
+      <label class="sym" onclick="togSym(this,event)" style="border-color:#90CAF9;"><input type="checkbox" value="fast_time"> T: เวลาเริ่มอาการ &lt;4.5 ชม.</label>
+    </div>
+    <!-- Sepsis screening -->
+    <div style="margin-top:9px;font-size:9px;font-weight:700;color:#B71C1C;letter-spacing:.5px;">🦠 Early Sepsis Screening (qSOFA + SIRS)</div>
+    <div class="sg" style="margin-top:4px;">
+      <label class="sym" onclick="togSym(this,event)" style="border-color:#EF9A9A;"><input type="checkbox" value="sep_altered"> ซึมสับสน (altered mentation)</label>
+      <label class="sym" onclick="togSym(this,event)" style="border-color:#EF9A9A;"><input type="checkbox" value="sep_infection"> สงสัยมีการติดเชื้อ</label>
+      <label class="sym" onclick="togSym(this,event)" style="border-color:#EF9A9A;"><input type="checkbox" value="sep_chills"> หนาวสั่น/ตัวเย็นชื้น</label>
+      <label class="sym" onclick="togSym(this,event)" style="border-color:#EF9A9A;"><input type="checkbox" value="sep_oliguria"> ปัสสาวะน้อยลง</label>
+    </div>
+  </div>
+
+  <!-- Symptoms -->
+  <div class="sec">
+    <div class="sec-lbl">⚠️ อาการอันตราย</div>
+    <div class="sg">
+      <label class="sym" onclick="togSym(this,event)"><input type="checkbox" value="chest_pain"> แน่น/เจ็บหน้าอก</label>
+      <label class="sym" onclick="togSym(this,event)"><input type="checkbox" value="dyspnea"> หายใจลำบาก</label>
+      <label class="sym" onclick="togSym(this,event)"><input type="checkbox" value="syncope"> หมดสติ/เป็นลม</label>
+      <label class="sym" onclick="togSym(this,event)"><input type="checkbox" value="altered"> ซึมลง/สับสน</label>
+      <label class="sym" onclick="togSym(this,event)"><input type="checkbox" value="bleeding"> เลือดออกผิดปกติ</label>
+      <label class="sym" onclick="togSym(this,event)"><input type="checkbox" value="seizure"> ชัก</label>
+      <label class="sym" onclick="togSym(this,event)"><input type="checkbox" value="vomit"> อาเจียนรุนแรง</label>
+      <label class="sym" onclick="togSym(this,event)"><input type="checkbox" value="fever"> ไข้สูง &gt;39°C</label>
+      <label class="sym" onclick="togSym(this,event)"><input type="checkbox" value="weakness"> แขน/ขาอ่อนแรง</label>
+      <label class="sym" onclick="togSym(this,event)"><input type="checkbox" value="trauma"> บาดเจ็บ/อุบัติเหตุ</label>
+    </div>
+    <!-- Pediatric-specific symptoms (shown only when age < 15) -->
+    <div id="ped-symptoms" style="display:none;margin-top:8px;">
+      <div style="font-size:9px;font-weight:700;color:#6A1B9A;letter-spacing:.5px;margin-bottom:5px;">👶 อาการเด็ก (MOPH Pediatric Criteria)</div>
+      <div class="sg">
+        <label class="sym" onclick="togSym(this,event)" style="border-color:#CE93D8;"><input type="checkbox" value="ped_stridor"> หายใจมีเสียง Stridor</label>
+        <label class="sym" onclick="togSym(this,event)" style="border-color:#CE93D8;"><input type="checkbox" value="ped_grunting"> หายใจมีเสียง Grunting</label>
+        <label class="sym" onclick="togSym(this,event)" style="border-color:#CE93D8;"><input type="checkbox" value="ped_retracting"> ใช้กล้ามเนื้อช่วยหายใจ</label>
+        <label class="sym" onclick="togSym(this,event)" style="border-color:#CE93D8;"><input type="checkbox" value="ped_cyanosis"> ริมฝีปาก/ปลายมือเขียว</label>
+        <label class="sym" onclick="togSym(this,event)" style="border-color:#CE93D8;"><input type="checkbox" value="ped_poor_feeding"> ดูดนม/กินน้อยลงมาก</label>
+        <label class="sym" onclick="togSym(this,event)" style="border-color:#CE93D8;"><input type="checkbox" value="ped_bulging_fontanel"> กระหม่อมโป่งตึง</label>
+        <label class="sym" onclick="togSym(this,event)" style="border-color:#CE93D8;"><input type="checkbox" value="ped_petechiae"> จุดเลือดออกใต้ผิวหนัง</label>
+        <label class="sym" onclick="togSym(this,event)" style="border-color:#CE93D8;"><input type="checkbox" value="ped_dehydration"> ขาดน้ำ (ตาลึก ปากแห้ง)</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Note -->
+  <div class="sec">
+    <div class="sec-lbl">📝 หมายเหตุ</div>
+    <textarea id="note" placeholder="ข้อมูลเพิ่มเติม เช่น มากับผู้ดูแล, ประวัติแพ้ยา..." rows="2"></textarea>
+  </div>
+
+  <!-- Submit — sticky on mobile -->
+  <div class="sec" id="submit-sec" style="position:sticky;bottom:62px;background:var(--card);z-index:100;border-top:2px solid var(--bdr);">
+    <button class="btn-ai" id="btn-ai" onclick="runTriage()">
+      <span id="bi">⚡</span><span id="bt">ประเมิน Triage ด้วย AI</span>
+    </button>
+  </div>
+
+  <!-- Queue -->
+  <div class="sec" id="q-sec">
+    <div class="sec-lbl">🗒️ คิวผู้ป่วยวันนี้ <span id="q-cnt" style="font-family:var(--mono);font-size:9px;color:var(--blue)"></span></div>
+    <div class="ql" id="q-list">
+      <div class="qi"><div class="qd ql2"></div><div class="qn">นาย ก. (52)</div><div class="qc">แน่นหน้าอก</div><span class="qb-sso">ปกส</span><div class="qt">08:12</div></div>
+      <div class="qi"><div class="qd ql3"></div><div class="qn">นาง ข. (38)</div><div class="qc">ปวดท้อง</div><span class="qb-sso">ปกส</span><div class="qt">08:35</div></div>
+      <div class="qi"><div class="qd ql4"></div><div class="qn">ด.ช. ค. (7)</div><div class="qc">ไข้ หวัด</div><span class="qb-uc">บทอง</span><div class="qt">09:01</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ RIGHT ════ -->
+<div class="right">
+
+  <!-- Welcome -->
+  <div class="welcome" id="welcome">
+    <div style="font-size:42px;opacity:.18;">🚨</div>
+    <div style="font-size:17px;font-weight:600;color:var(--txt);opacity:.4;">ระบบ Triage โรงพยาบาลพระนครศรีอยุธยา</div>
+    <div style="font-size:13px;max-width:300px;line-height:1.7;">กรอกข้อมูลผู้ป่วย อาการนำ Vital Signs และ GCS<br>ระบบรองรับเกณฑ์เด็ก MOPH + ESI<br>ผลบันทึกลง Google Sheets อัตโนมัติ</div>
+    <div id="sh-hint" style="display:none;margin-top:6px;background:var(--card);border:1.5px dashed var(--bdr);border-radius:10px;padding:16px;text-align:center;">
+      <div style="font-size:14px;font-weight:700;margin-bottom:5px;">📊 ยังไม่ได้เชื่อม Google Sheets</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">ตั้งค่าครั้งเดียว ใช้ได้ทุกเครื่องในแผนก</div>
+      <button class="btn btn-p" onclick="openSetup()">⚙️ ตั้งค่าเลย</button>
+    </div>
+  </div>
+
+  <!-- Processing -->
+  <div class="proc" id="proc">
+    <div class="sw"><div class="sr"></div><div class="sr"></div><div class="sr"></div></div>
+    <div style="font-size:12px;font-weight:500;color:var(--muted);font-family:var(--mono);" id="proc-lbl">กำลังประมวลผล...</div>
+    <div class="ps">
+      <div class="ps-item" id="s1"><div class="pd"></div>Tokenize อาการนำภาษาไทย</div>
+      <div class="ps-item" id="s2"><div class="pd"></div>Multilingual SBERT Embedding</div>
+      <div class="ps-item" id="s3"><div class="pd"></div>XGBoost + Vital Score + GCS</div>
+      <div class="ps-item" id="s4"><div class="pd"></div>Pediatric MOPH/ESI Criteria</div>
+      <div class="ps-item" id="s5"><div class="pd"></div>Ensemble → Clinical Safety Rules</div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="res" id="res"></div>
+
+</div>
+</div>
+
+<!-- ════ MOBILE BOTTOM NAV ════ -->
+<nav class="mob-nav" id="mob-nav">
+  <div class="mob-nav-inner">
+    <button class="mnb active" id="mnb-form" onclick="mobSwitch('form')">
+      <span class="mico">📋</span>
+      <span>กรอกข้อมูล</span>
+    </button>
+    <button class="mnb" id="mnb-result" onclick="mobSwitch('result')">
+      <span class="mico">🔴</span>
+      <span>ผลประเมิน</span>
+      <span class="mob-badge" id="mob-result-badge">!</span>
+    </button>
+    <button class="mnb" id="mnb-queue" onclick="mobSwitch('queue')">
+      <span class="mico">👥</span>
+      <span>คิว</span>
+    </button>
+    <button class="mnb" id="mnb-settings" onclick="openSetup()">
+      <span class="mico">⚙️</span>
+      <span>ตั้งค่า</span>
+    </button>
+  </div>
+</nav>
+
+<script>
+// ══ CONFIG ══════════════════════════════════
+// ── ค่าตั้งต้นสำหรับแผนก OPD ประกันสังคม รพ.พระนครศรีอยุธยา ──
+var DEFAULT_URL   = 'https://script.google.com/macros/s/AKfycbzBP2cI6R48oUHxyXYkMw5_vLCvzt1B9JFXKSXVTDMgW06XIhTSTm-t8Z5yvUGEvAbh2w/exec';
+var DEFAULT_SID   = '1JBMCmcQVKYXoR6hYWzLp6xD11OOg6Ax8O2Q9bBFw9P4';
+var DEFAULT_NURSE = 'mb005';
+
+var CFG={
+  url:  localStorage.getItem('ts_url')   || DEFAULT_URL,
+  sid:  localStorage.getItem('ts_sid')   || DEFAULT_SID,
+  nurse:localStorage.getItem('ts_nurse') || DEFAULT_NURSE
+};
+var ptCount=0, selIns2='';
+var mobCurrent = 'form'; // track current mobile tab
+
+// ══ MOBILE PANEL SWITCH ══════════════════════
+function mobSwitch(tab){
+  var isMob = window.innerWidth <= 840;
+  if(!isMob) return;
+
+  mobCurrent = tab;
+
+  // Reset all nav buttons
+  ['form','result','queue'].forEach(function(t){
+    var btn = document.getElementById('mnb-'+t);
+    if(btn) btn.classList.remove('active');
+  });
+  var activeBtn = document.getElementById('mnb-'+tab);
+  if(activeBtn) activeBtn.classList.add('active');
+
+  var left  = document.querySelector('.left');
+  var right = document.querySelector('.right');
+  var qSec  = document.getElementById('q-sec'); // queue section inside left
+
+  // Hide all panels first
+  if(left)  { left.classList.remove('mob-show');  left.style.display='none'; }
+  if(right) { right.classList.remove('mob-show'); right.style.display='none'; }
+
+  if(tab === 'form'){
+    // Show left panel (form), hide queue
+    if(left){ left.style.display='flex'; left.classList.add('mob-show'); }
+    if(qSec) qSec.style.display='none';
+    // Scroll to top of form
+    if(left) left.scrollTop = 0;
+  }
+  else if(tab === 'result'){
+    // Show right panel (results)
+    if(right){ right.style.display='flex'; right.classList.add('mob-show'); }
+    // Clear badge
+    var badge = document.getElementById('mob-result-badge');
+    if(badge) badge.classList.remove('on');
+    // Scroll result into view
+    setTimeout(function(){
+      var res = document.getElementById('res');
+      if(res && res.classList.contains('on')) res.scrollIntoView({behavior:'smooth',block:'start'});
+    }, 80);
+  }
+  else if(tab === 'queue'){
+    // Show left panel with queue visible
+    if(left){ left.style.display='flex'; left.classList.add('mob-show'); }
+    if(qSec){ qSec.style.display='block'; qSec.scrollIntoView({behavior:'smooth',block:'start'}); }
+  }
+}
+
+// Apply mobile layout on load and resize
+function applyMobLayout(){
+  var isMob = window.innerWidth <= 840;
+  var left  = document.querySelector('.left');
+  var right = document.querySelector('.right');
+  if(!isMob){
+    // Desktop: show both, remove mob-show
+    if(left)  { left.style.display='flex';  left.classList.remove('mob-show'); }
+    if(right) { right.style.display='flex'; right.classList.remove('mob-show'); }
+  } else {
+    // Mobile: apply current tab
+    mobSwitch(mobCurrent);
+  }
+}
+window.addEventListener('resize', applyMobLayout);
+
+// ══ INIT ════════════════════════════════════
+window.addEventListener('load',function(){
+  setInterval(clock,1000); clock();
+  if(!localStorage.getItem('ts_url'))   localStorage.setItem('ts_url',   DEFAULT_URL);
+  if(!localStorage.getItem('ts_sid'))   localStorage.setItem('ts_sid',   DEFAULT_SID);
+  if(!localStorage.getItem('ts_nurse')) localStorage.setItem('ts_nurse', DEFAULT_NURSE);
+  updateSheetStatus();
+  if(CFG.nurse){ document.getElementById('hdr-nurse').textContent=CFG.nurse; document.getElementById('cfg-nurse').value=CFG.nurse; }
+  if(CFG.url)  { document.getElementById('cfg-url').value=CFG.url; document.getElementById('modal').classList.add('hidden'); }
+  if(CFG.sid)  document.getElementById('cfg-sid').value=CFG.sid;
+  if(!CFG.url) document.getElementById('sh-hint').style.display='block';
+  applyMobLayout();
+});
+function clock(){
+  var n=new Date();
+  document.getElementById('dt-now').textContent=
+    n.toLocaleDateString('th-TH',{weekday:'short',year:'numeric',month:'short',day:'numeric'})+
+    ' · '+n.toLocaleTimeString('th-TH');
+}
+function updateSheetStatus(){
+  var el=document.getElementById('sh-st'), lb=document.getElementById('sh-lbl');
+  if(CFG.url){ el.className='sh-status sh-ok'; lb.textContent='Sheets เชื่อมแล้ว ✓'; }
+  else        { el.className='sh-status sh-warn'; lb.textContent='ยังไม่เชื่อม Sheets'; }
+}
+
+// ══ MODAL ═══════════════════════════════════
+function openSetup(){ document.getElementById('modal').classList.remove('hidden'); }
+function skipSetup(){ document.getElementById('modal').classList.add('hidden'); }
+function saveConfig(){
+  CFG.url  =document.getElementById('cfg-url').value.trim();
+  CFG.sid  =document.getElementById('cfg-sid').value.trim();
+  CFG.nurse=document.getElementById('cfg-nurse').value.trim();
+  localStorage.setItem('ts_url',  CFG.url);
+  localStorage.setItem('ts_sid',  CFG.sid);
+  localStorage.setItem('ts_nurse',CFG.nurse);
+  if(CFG.nurse) document.getElementById('hdr-nurse').textContent=CFG.nurse;
+  updateSheetStatus();
+  document.getElementById('modal').classList.add('hidden');
+  document.getElementById('sh-hint').style.display='none';
+}
+
+// ══ INSURANCE ═══════════════════════════════
+var INS_CLS={SSO:'i-sso',UC:'i-uc',WC:'i-wc',GOVT:'i-govt',SELF:'i-self',OTH:'i-other'};
+var INS_LBL={SSO:'ประกันสังคม(ปกส)',UC:'บัตรทอง(UC)',WC:'กรมบัญชีกลาง',GOVT:'ข้าราชการ',SELF:'ชำระเอง',OTH:'อื่นๆ','':"ไม่ระบุ"};
+function selIns(code){
+  ['SSO','UC','WC','GOVT','SELF','OTH'].forEach(function(k){
+    var el=document.getElementById('ib-'+k); if(el) el.className='ins-btn';
+  });
+  selIns2=code;
+  var btn=document.getElementById('ib-'+code); if(btn) btn.className='ins-btn '+INS_CLS[code];
+  document.getElementById('ins-detail').style.display='block';
+}
+
+// ══ VITAL FLAGS ══════════════════════════════
+function sf(id,val,lo,hi,loCrit,hiCrit){
+  var el=document.getElementById(id); if(!el){return 0;}
+  if(!val){el.textContent='';el.className='vf';return 0;}
+  var v=parseFloat(val);
+  if((loCrit&&v<loCrit)||(hiCrit&&v>hiCrit)){el.textContent='⚠ วิกฤต';el.className='vf crit';return 3;}
+  if((lo&&v<lo)||(hi&&v>hi)){el.textContent='! ผิดปกติ';el.className='vf warn';return 2;}
+  el.textContent='✓ ปกติ';el.className='vf ok';return 0;
+}
+function fv(){
+  var age = parseInt(document.getElementById('age').value) || 0;
+  var isPed = age > 0 && age < 15;
+  if(isPed){
+    var pg = getPedGroup(age);
+    // ใช้ ESI v4 Danger Zone เป็น "warn" threshold, PALS normal range เป็น "ok" baseline
+    sf('f-bp',  document.getElementById('sbp').value, pg.sbpLo, 999,   80, 999);
+    sf('f-hr',  document.getElementById('hr').value,  pg.hrLo,  pg.hrDZ, pg.hrLo-20, pg.hrDZ+30);
+    sf('f-rr',  document.getElementById('rr').value,  pg.rrLo,  pg.rrDZ, 8,  pg.rrDZ+10);
+  } else {
+    // ผู้ใหญ่: ESI v4 HR>100 / RR>20 = Danger Zone (warn), MOPH SBP<90 = crit
+    sf('f-bp',  document.getElementById('sbp').value, 90,160,80,180);
+    sf('f-hr',  document.getElementById('hr').value,  60,100,50,130);  // ESI: >100 = warn
+    sf('f-rr',  document.getElementById('rr').value,  12,20, 8, 30);   // ESI: >20 = warn
+  }
+  sf('f-tmp', document.getElementById('temp').value,36,37.5,35,39);
+  sf('f-spo2',document.getElementById('spo2').value,92,null,90,null);  // ESI: <92% = Danger Zone
+  sf('f-pain',document.getElementById('pain').value,null,6,null,9);
+}
+function togSym(el, event){
+  // <label onclick> + <input type="checkbox"> ภายใน จะทำให้ browser toggle checkbox อัตโนมัติอีกครั้ง
+  // ต้องใช้ preventDefault() เพื่อป้องกัน double-toggle
+  if(event) event.preventDefault();
+  var cb = el.querySelector('input[type="checkbox"]');
+  var nowActive = !el.classList.contains('active');
+  if(nowActive){ el.classList.add('active'); } else { el.classList.remove('active'); }
+  cb.checked = nowActive;
+}
+
+// ══ PEDIATRIC DANGER ZONE — ตามภาพ Criteria จริง + MOPH ══════
+// อ้างอิง: Danger Zone Vital Sign chart (ตามภาพ)
+//   < 1 mo  : HR <100 หรือ ≥180,  RR ≥60
+//   < 1 y   : HR <100 หรือ ≥180,  RR ≥50
+//   1-3 y   : HR ≥140,             RR ≥40
+//   3-5 y   : HR ≥120,             RR ≥40
+//   5-12 y  : HR ≥120,             RR ≥30
+//   >12 y   : HR ≥120,             RR ≥30
+//   SpO₂ ≤94% = Danger Zone ทุกวัย (ตามภาพ)
+// MOPH L1: GCS≤8, SpO₂<90, SBP<90/MAP<60, ชัก/Apnea
+function getPedGroup(age){
+  var mos = age * 12;
+  if(mos < 1)  return {label:'<1 เดือน',   hrDZlo:100, hrDZ:180, rrDZ:60,  hrLo:100,hrHi:160, rrLo:30,rrHi:60,  sbpLo:60, tempFever:38.0, mophNote:'ทารก<1เดือน ไข้ใดๆ = ความเสี่ยงสูง'};
+  if(age < 1)  return {label:'1เดือน–11เดือน', hrDZlo:100, hrDZ:180, rrDZ:50,  hrLo:100,hrHi:160, rrLo:30,rrHi:50,  sbpLo:60, tempFever:38.0, mophNote:'ทารก<3เดือน ไข้≥38°C = L2'};
+  if(age < 3)  return {label:'1–2 ปี',      hrDZlo:null, hrDZ:140, rrDZ:40,  hrLo:90, hrHi:140, rrLo:24,rrHi:40,  sbpLo:70, tempFever:38.0, mophNote:'เด็ก<3ปี ไข้≥38°C = Danger Zone'};
+  if(age < 5)  return {label:'3–4 ปี',      hrDZlo:null, hrDZ:120, rrDZ:40,  hrLo:80, hrHi:120, rrLo:22,rrHi:34,  sbpLo:78, tempFever:38.5, mophNote:''};
+  if(age < 12) return {label:'5–11 ปี',     hrDZlo:null, hrDZ:120, rrDZ:30,  hrLo:70, hrHi:120, rrLo:18,rrHi:30,  sbpLo:82, tempFever:38.5, mophNote:''};
+  return             {label:'>12 ปี',       hrDZlo:null, hrDZ:120, rrDZ:30,  hrLo:60, hrHi:120, rrLo:12,rrHi:24,  sbpLo:90, tempFever:38.5, mophNote:'อายุ>12ปี ใช้เกณฑ์เดียวกับผู้ใหญ่'};
+}
+// ตรวจสอบว่า Vital อยู่ใน Pediatric Danger Zone ตามภาพ
+function isPedDangerZone(age, hr, rr, spo2){
+  var pg = getPedGroup(age);
+  var hrDanger = (hr !== null) && (hr >= pg.hrDZ || (pg.hrDZlo && hr < pg.hrDZlo));
+  var rrDanger = (rr !== null) && (rr >= pg.rrDZ);
+  var spo2Danger = (spo2 !== null) && (spo2 <= 94);
+  return {any: hrDanger||rrDanger||spo2Danger, hr:hrDanger, rr:rrDanger, spo2:spo2Danger};
+}
+
+function onAgeChange(){
+  fv();
+  var age = parseInt(document.getElementById('age').value) || 0;
+  var isPed = age > 0 && age < 15;
+  // Pediatric banner
+  var banner = document.getElementById('ped-banner');
+  var pedSyms = document.getElementById('ped-symptoms');
+  var pedNote = document.getElementById('gcs-ped-note');
+  var painChild = document.getElementById('pain-child');
+  if(isPed){
+    var grp = getPedGroup(age);
+    banner.classList.remove('hidden');
+    document.getElementById('ped-group-label').textContent = grp.label;
+    pedSyms.style.display = 'block';
+    painChild.classList.add('show');
+    if(age < 2) pedNote.style.display = 'block';
+    else pedNote.style.display = 'none';
+  } else {
+    banner.classList.add('hidden');
+    pedSyms.style.display = 'none';
+    painChild.classList.remove('show');
+    pedNote.style.display = 'none';
+  }
+}
+
+function selFace(val){
+  document.querySelectorAll('.pf-btn').forEach(function(b){ b.classList.remove('sel'); });
+  event.currentTarget.classList.add('sel');
+  document.getElementById('pain').value = val;
+  fv();
+}
+
+// ══ GCS CALCULATOR ══════════════════════════
+function calcGCS(){
+  var e = parseInt(document.getElementById('gcs-e').value) || null;
+  var v = parseInt(document.getElementById('gcs-v').value) || null;
+  var m = parseInt(document.getElementById('gcs-m').value) || null;
+  var totalEl = document.getElementById('gcs-total');
+  var badgeEl = document.getElementById('gcs-badge');
+  var interpEl = document.getElementById('gcs-interp');
+  document.getElementById('gcs-e-val').textContent = e || '—';
+  document.getElementById('gcs-v-val').textContent = v || '—';
+  document.getElementById('gcs-m-val').textContent = m || '—';
+  if(!e || !v || !m){ totalEl.textContent='—'; totalEl.className='gcs-total'; badgeEl.textContent=''; interpEl.textContent=''; return; }
+  var tot = e + v + m;
+  totalEl.textContent = tot;
+  if(tot >= 14){
+    totalEl.className='gcs-total gcs-15';
+    badgeEl.className='gcs-badge gcs-b15'; badgeEl.textContent='ปกติ (15-14)';
+    interpEl.textContent = 'ระดับความรู้สึกตัวปกติ';
+  } else if(tot >= 13){
+    totalEl.className='gcs-total gcs-13';
+    badgeEl.className='gcs-badge gcs-b13'; badgeEl.textContent='บาดเจ็บเล็กน้อย (13)';
+    interpEl.textContent = 'Minor TBI — เฝ้าระวังอย่างใกล้ชิด';
+  } else if(tot >= 9){
+    totalEl.className='gcs-total gcs-9';
+    badgeEl.className='gcs-badge gcs-b9'; badgeEl.textContent='⚠ บาดเจ็บปานกลาง (9-12)';
+    interpEl.textContent = 'Moderate TBI — พิจารณา CT / ปรึกษา Neuro';
+  } else {
+    totalEl.className='gcs-total gcs-crit';
+    badgeEl.className='gcs-badge gcs-bcrit'; badgeEl.textContent='🚨 วิกฤต ≤8 — ใส่ท่อช่วยหายใจ';
+    interpEl.textContent = 'Severe TBI — Airway management ทันที!';
+  }
+}
+
+// ══ VITAL SCORE (ปรับตามกลุ่มอายุ) ══════════
+function getVitalScore(){
+  var s = 0;
+  var age  = parseInt(document.getElementById('age').value) || 0;
+  var isPed = age > 0 && age < 15;
+
+  var sbpEl = document.getElementById('sbp').value.trim();
+  var hrEl  = document.getElementById('hr').value.trim();
+  var rrEl  = document.getElementById('rr').value.trim();
+  var spo2El= document.getElementById('spo2').value.trim();
+  var tempEl= document.getElementById('temp').value.trim();
+  var painEl= document.getElementById('pain').value.trim();
+  var gcsE  = parseInt(document.getElementById('gcs-e').value) || null;
+  var gcsV  = parseInt(document.getElementById('gcs-v').value) || null;
+  var gcsM  = parseInt(document.getElementById('gcs-m').value) || null;
+  var gcs   = (gcsE && gcsV && gcsM) ? gcsE + gcsV + gcsM : null;
+
+  if(isPed){
+    var pg = getPedGroup(age);
+    var hr2=hrEl!==''?parseInt(hrEl):null;
+    var rr2=rrEl!==''?parseInt(rrEl):null;
+    // ── Danger Zone ตามภาพ: HR
+    if(hr2!==null){
+      if(hr2 >= pg.hrDZ || (pg.hrDZlo && hr2 < pg.hrDZlo)){ s+=3; }  // Danger Zone
+      else if(hr2 < pg.hrLo){ s+=1; }
+    }
+    // ── Danger Zone ตามภาพ: RR
+    if(rr2!==null){
+      if(rr2 >= pg.rrDZ){ s+=3; }   // Danger Zone
+      else if(rr2 < 8){ s+=2; }     // Bradypnea วิกฤต
+    }
+    // ── SBP
+    if(sbpEl !== ''){
+      var sbp=parseInt(sbpEl);
+      if(sbp < 80){ s+=4; }
+      else if(sbp < pg.sbpLo){ s+=2; }
+    }
+    // ── Fever
+    if(tempEl !== ''){
+      var tmp=parseFloat(tempEl);
+      if(tmp < 35.0){ s+=3; }
+      else if(tmp >= 40.0){ s+=2; }
+      else if(tmp >= pg.tempFever){ s+=2; }
+    }
+    // ── เด็ก: Pain สูงแต่ Vital ปกติ → ไม่นับ pain ใน score (pain alone ไม่ up-triage)
+    var pedDZ = isPedDangerZone(age, hr2, rr2, spo2El!==''?parseInt(spo2El):null);
+    if(painEl !== '' && pedDZ.any){
+      var pn=parseInt(painEl); if(pn>=8){s+=2;}else if(pn>=5){s+=1;}
+    }
+    // SpO₂ ≤94% = Danger Zone ตามภาพ
+    if(spo2El !== ''){ var sp2=parseInt(spo2El); if(sp2<90){s+=5;}else if(sp2<=94){s+=3;}else if(sp2<96){s+=1;} }
+  } else {
+    // ── ผู้ใหญ่
+    if(sbpEl !== ''){ var sbp=parseInt(sbpEl); if(sbp<90||sbp>180){s+=3;}else if(sbp<100||sbp>160){s+=1;} }
+    if(hrEl  !== ''){ var hr=parseInt(hrEl);   if(hr>=120||hr<50){s+=3;}else if(hr>100||hr<60){s+=1;} }
+    if(rrEl  !== ''){ var rr=parseInt(rrEl);   if(rr>=30||rr<8){s+=3;}else if(rr>20||rr<12){s+=1;} }
+    if(tempEl !== ''){ var tmp=parseFloat(tempEl); if(tmp>=39.0||tmp<35.0){s+=2;}else if(tmp>37.5||tmp<=36.0){s+=1;} }
+    if(painEl !== ''){ var pn=parseInt(painEl); if(pn>=8){s+=2;}else if(pn>=5){s+=1;} }
+    // SpO₂ ≤94% = Danger Zone
+    if(spo2El !== ''){ var sp2=parseInt(spo2El); if(sp2<90){s+=5;}else if(sp2<=94){s+=3;}else if(sp2<96){s+=1;} }
+  }
+
+  // GCS penalty
+  if(gcs !== null){
+    if(gcs <= 8){ s+=5; }         // วิกฤต → L1
+    else if(gcs <= 12){ s+=3; }   // ปานกลาง → L2
+    else if(gcs <= 13){ s+=1; }   // เล็กน้อย
+  }
+
+  return s;
+}
+
+function getDangerScore(){
+  var s = 0;
+  var cbs = document.querySelectorAll('.sym input:checked');
+  var highRisk = ['chest_pain', 'dyspnea', 'syncope', 'altered', 'seizure', 'weakness'];
+  // Pediatric high-risk symptoms
+  var pedHighRisk = ['ped_stridor','ped_grunting','ped_retracting','ped_cyanosis','ped_bulging_fontanel','ped_petechiae'];
+  var pedModRisk  = ['ped_poor_feeding','ped_dehydration'];
+  cbs.forEach(function(cb){
+    if (highRisk.indexOf(cb.value) >= 0 || pedHighRisk.indexOf(cb.value) >= 0) { s += 4.0; }
+    else if(pedModRisk.indexOf(cb.value) >= 0) { s += 2.5; }
+    else { s += 2.0; }
+  });
+  return s;
+}
+
+// ══ NEWS2 CALCULATOR ════════════════════════════════════
+function calcNEWS2(inp){
+  var s = 0; var params = {};
+  // RR
+  var rr = inp.rr;
+  if(rr !== null){
+    if(rr<=8){params.rr={v:rr,sc:3,lbl:'≤8'}}
+    else if(rr<=11){params.rr={v:rr,sc:1,lbl:'9-11'}}
+    else if(rr<=20){params.rr={v:rr,sc:0,lbl:'12-20'}}
+    else if(rr<=24){params.rr={v:rr,sc:2,lbl:'21-24'}}
+    else{params.rr={v:rr,sc:3,lbl:'≥25'}}
+    s+=params.rr.sc;
+  }
+  // SpO₂ (Scale 1 — ไม่มี hypercapnia)
+  var sp = inp.spo2;
+  if(sp !== null){
+    if(sp<=91){params.spo2={v:sp,sc:3,lbl:'≤91%'}}
+    else if(sp<=93){params.spo2={v:sp,sc:2,lbl:'92-93%'}}
+    else if(sp<=95){params.spo2={v:sp,sc:1,lbl:'94-95%'}}
+    else{params.spo2={v:sp,sc:0,lbl:'≥96%'}}
+    s+=params.spo2.sc;
+  }
+  // O₂ supplement
+  var o2 = parseInt(document.getElementById('news-o2').value)||0;
+  params.o2={v:o2>0?'มี':'ไม่มี',sc:o2,lbl:o2>0?'เสริม O₂':''};
+  s+=o2;
+  // Temp
+  var tmp = inp.temp;
+  if(tmp !== null){
+    if(tmp<=35.0){params.temp={v:tmp,sc:3,lbl:'≤35°C'}}
+    else if(tmp<=36.0){params.temp={v:tmp,sc:1,lbl:'35.1-36°C'}}
+    else if(tmp<=38.0){params.temp={v:tmp,sc:0,lbl:'36.1-38°C'}}
+    else if(tmp<=39.0){params.temp={v:tmp,sc:1,lbl:'38.1-39°C'}}
+    else{params.temp={v:tmp,sc:2,lbl:'≥39.1°C'}}
+    s+=params.temp.sc;
+  }
+  // SBP
+  var sbp = inp.sbp;
+  if(sbp !== null){
+    if(sbp<=90){params.sbp={v:sbp,sc:3,lbl:'≤90'}}
+    else if(sbp<=100){params.sbp={v:sbp,sc:2,lbl:'91-100'}}
+    else if(sbp<=110){params.sbp={v:sbp,sc:1,lbl:'101-110'}}
+    else if(sbp<=219){params.sbp={v:sbp,sc:0,lbl:'111-219'}}
+    else{params.sbp={v:sbp,sc:3,lbl:'≥220'}}
+    s+=params.sbp.sc;
+  }
+  // HR
+  var hr = inp.hr;
+  if(hr !== null){
+    if(hr<=40){params.hr={v:hr,sc:3,lbl:'≤40'}}
+    else if(hr<=50){params.hr={v:hr,sc:1,lbl:'41-50'}}
+    else if(hr<=90){params.hr={v:hr,sc:0,lbl:'51-90'}}
+    else if(hr<=110){params.hr={v:hr,sc:1,lbl:'91-110'}}
+    else if(hr<=130){params.hr={v:hr,sc:2,lbl:'111-130'}}
+    else{params.hr={v:hr,sc:3,lbl:'≥131'}}
+    s+=params.hr.sc;
+  }
+  // AVPU
+  var avpu = document.getElementById('news-avpu').value;
+  var avpuSc = (avpu==='A')?0:3;
+  params.avpu={v:avpu,sc:avpuSc,lbl:avpu==='A'?'Alert':'ซึม/ไม่ตอบสนอง'};
+  s+=avpuSc;
+  // Risk level
+  var risk,riskCls,riskTh;
+  if(s>=7){risk='HIGH';riskCls='news-high';riskTh='สูงมาก — แจ้งแพทย์ฉุกเฉินทันที'}
+  else if(s>=5){risk='MEDIUM';riskCls='news-med';riskTh='ปานกลาง — เพิ่มความถี่ติดตาม'}
+  else if(s>=1){risk='LOW';riskCls='news-low';riskTh='ต่ำ — ติดตามตามปกติ'}
+  else{risk='ZERO';riskCls='news-low';riskTh='ปกติ'}
+  return {score:s, risk:risk, riskCls:riskCls, riskTh:riskTh, params:params};
+}
+
+// ══ ACS/EKG ALERT ════════════════════════════════════
+function checkACS(inp){
+  if(inp.age <= 35) return null;
+  var chief = (inp.chief||'').toLowerCase();
+  var acsKeywords = ['แน่นหน้าอก','เจ็บหน้าอก','แน่นอก','เจ็บอก','ปวดลิ้นปี่',
+                     'ปวดยอดอก','แสบอก','แน่นลิ้นปี่','chest','epigastric'];
+  var hasACS = acsKeywords.some(function(k){return chief.indexOf(k)>=0;});
+  var hasCPsym = Array.from(document.querySelectorAll('.sym input:checked'))
+                      .some(function(cb){return cb.value==='chest_pain';});
+  if(hasACS || hasCPsym){
+    var risk = inp.age >= 50 ? 'HIGH' : 'MOD';
+    return {show:true, risk:risk,
+            msg: risk==='HIGH'
+              ? 'อายุ '+inp.age+' ปี + อาการเจ็บหน้าอก/ปวดลิ้นปี่ — ความเสี่ยง ACS สูง'
+              : 'อายุ '+inp.age+' ปี + อาการเจ็บหน้าอก/ปวดลิ้นปี่ — ควร rule-out ACS'};
+  }
+  return null;
+}
+
+// ══ STROKE FAST TRACK ════════════════════════════════
+function checkStroke(inp){
+  // อ่าน checkbox ทุกตัวที่กา (BE-FAST มี class .sym เหมือนกัน)
+  var syms = Array.from(document.querySelectorAll('.sym input:checked')).map(function(cb){return cb.value;});
+
+  var fastItems = ['fast_balance','fast_eyes','fast_face','fast_arm','fast_speech'];
+  var hasFast   = fastItems.filter(function(s){ return syms.indexOf(s) >= 0; });
+  var hasTime   = syms.indexOf('fast_time') >= 0;
+
+  // chief complaint keyword detection (เพิ่ม score แต่ไม่นับเป็น BE-FAST item)
+  var chief = (inp.chief||'').toLowerCase();
+  var chiefStroke = ['ปากเบี้ยว','แขนอ่อนแรง','พูดไม่ชัด','พูดไม่ได้','ตามัว',
+                     'มองไม่เห็น','เดินเซ','ชาครึ่งซีก','stroke','สโตรก','อ่อนแรงครึ่งซีก'];
+  var chiefHit = chiefStroke.filter(function(k){ return chief.indexOf(k) >= 0; });
+
+  // score = จำนวน BE-FAST ที่กา (+ chief keyword ถ้ายังไม่มี BE-FAST เลย)
+  var befast = hasFast.length;
+  var score  = befast + (befast === 0 ? Math.min(chiefHit.length, 1) : 0);
+
+  if(score === 0 && chiefHit.length === 0) return null;
+
+  return {
+    show      : true,
+    hasFast   : hasFast,           // array ของ value ที่กาจริง
+    hasTime   : hasTime,
+    befast    : befast,            // จำนวน BE-FAST items
+    score     : score,
+    chiefHit  : chiefHit,
+    // Eligible: BE-FAST ≥2 items AND เวลา <4.5 ชม.
+    eligible  : befast >= 2 && hasTime
+  };
+}
+
+// ══ EARLY SEPSIS ═════════════════════════════════════
+function checkSepsis(inp){
+  var syms = Array.from(document.querySelectorAll('.sym input:checked')).map(function(cb){return cb.value;});
+  // qSOFA criteria: RR≥22, altered mentation, SBP≤100
+  var qsofaRR = inp.rr !== null && inp.rr >= 22;
+  var qsofaAMS = syms.indexOf('sep_altered')>=0 || syms.indexOf('altered')>=0 ||
+                 (inp.gcs !== null && inp.gcs < 15);
+  var qsofaSBP = inp.sbp !== null && inp.sbp <= 100;
+  var qsofa = (qsofaRR?1:0)+(qsofaAMS?1:0)+(qsofaSBP?1:0);
+  // SIRS: temp, HR, RR, WBC (ไม่มี lab → ใช้ available)
+  var sirsTemp = inp.temp !== null && (inp.temp > 38.0 || inp.temp < 36.0);
+  var sirsHR = inp.hr !== null && inp.hr > 90;
+  var sirsRR = inp.rr !== null && inp.rr > 20;
+  var sirs = (sirsTemp?1:0)+(sirsHR?1:0)+(sirsRR?1:0);
+  var hasInfection = syms.indexOf('sep_infection')>=0;
+  var hasSepSx = syms.indexOf('sep_chills')>=0 || syms.indexOf('sep_oliguria')>=0;
+  // Trigger if qSOFA≥2 or (SIRS≥2 + suspected infection)
+  var isAlert = qsofa >= 2 || (sirs >= 2 && hasInfection);
+  if(!isAlert && !hasSepSx) return null;
+  return {
+    show: true,
+    qsofa: qsofa,
+    sirs: sirs,
+    qsofaRR: qsofaRR, qsofaAMS: qsofaAMS, qsofaSBP: qsofaSBP,
+    sirsTemp: sirsTemp, sirsHR: sirsHR, sirsRR: sirsRR,
+    hasInfection: hasInfection,
+    severity: qsofa >= 2 ? 'HIGH' : 'MOD'
+  };
+}
+
+function analyzeChief(t){
+  t=t.toLowerCase();
+  var kw={1:['ไม่รู้สึกตัว','หยุดหายใจ','หัวใจหยุด','ช็อก','ชอก','เลือดออกมาก','ชักไม่หยุด','หมดสติไม่รู้ตัว','หมดสติไม่รู้สึกตัว','ไม่หายใจ','cpr','code blue','หายใจไม่ออกสีเขียว','เขียวคล้ำ'],
+          2:['แน่นหน้าอก','เจ็บหน้าอก','หายใจไม่ออก','หมดสติ','แขนอ่อนแรง','ปากเบี้ยว','พูดไม่ชัด','อ่อนแรงครึ่งซีก','เจ็บอก','แน่นอก','เหนื่อยหอบรุนแรง','เป็นลม','วูบ','stroke','สโตรก','ชักต่อเนื่อง','stridor','หายใจเสียงดัง','กระหม่อมโป่ง'],
+          3:['ปวดท้องรุนแรง','อาเจียนเป็นเลือด','ปัสสาวะไม่ออก','ปวดศีรษะรุนแรง','ไข้สูง','หายใจลำบาก','เหนื่อย','หอบ','ปวดท้องมาก','ปวดหัวมาก','อุบัติเหตุ','รถชน','ชัก','ไข้สูงเด็ก','ซึม','กินน้อย','ท้องเสียรุนแรง'],
+          4:['ปวดท้อง','คลื่นไส้','อาเจียน','ไข้','ปวดหัว','ปวดหลัง','ไอ','เจ็บคอ','ผื่น','บวม','ปวดหู','ปวดฟัน','ถ่ายเหลว','ท้องเสีย','น้ำมูก','ไอมาก'],
+          5:['นัดตรวจ','รับยา','ตรวจสุขภาพ','ขอใบรับรอง','ติดตามผล','ฉีดวัคซีน','ขอยา']};
+  var lv=5;
+  for(var l=1;l<=5;l++){ if(kw[l].some(function(w){return t.indexOf(w)>=0;})){ lv=Math.min(lv,l); } }
+  return lv;
+}
+function sbertP(cl){
+  var base=[0.02,0.05,0.20,0.55,0.18];
+  var p=base.map(function(v,i){var d=Math.abs(i-(cl-1));return v*Math.exp(-d*0.8)+(i===cl-1?0.3:0);});
+  var tot=p.reduce(function(a,b){return a+b;},0); return p.map(function(v){return v/tot;});
+}
+function xgbP(vs,ds,cl){
+  var base=[0.03,0.07,0.25,0.45,0.20];
+  var shift=(vs+ds)/3; // ปรับตัวหารให้เหมาะสม (เปลี่ยนจาก /20 เป็น /3) เพื่อขยับเกรดได้จริงเมื่อมีสัญญาณชีพรุนแรง
+  var tgt=Math.max(0,cl-1-Math.round(shift));
+  var p=base.map(function(v,i){var d=Math.abs(i-tgt);return v*Math.exp(-d*0.7)+(i===tgt?0.25:0);});
+  var tot=p.reduce(function(a,b){return a+b;},0); return p.map(function(v){return v/tot;});
+}
+function ensP(xg,sb){return xg.map(function(v,i){return v*0.55+sb[i]*0.45;});}
+function argmax(a){var mx=0,mi=0;a.forEach(function(v,i){if(v>mx){mx=v;mi=i;}});return mi;}
+
+var LVL={
+  1:{th:'วิกฤต (Resuscitation)',en:'Level 1',time:'รักษาทันที',cls:'l1',
+     act:[{i:'🚨',t:'เรียกทีม Code Blue / CPR ทันที',p:'u'},{i:'🛏️',t:'จัดเตียง Resuscitation Room',p:'u'},{i:'📡',t:'แจ้งแพทย์ Attending ทันที',p:'u'}],
+     fl:['Airway compromise','Circulatory collapse','Immediate life threat']},
+  2:{th:'ฉุกเฉินมาก (Emergent)',en:'Level 2',time:'ภายใน 15 นาที',cls:'l2',
+     act:[{i:'🛏️',t:'นำเข้าห้องตรวจฉุกเฉิน',p:'u'},{i:'📊',t:'Monitor ECG + SpO₂',p:'u'},{i:'🩸',t:'เจาะเลือด CBC,BMP,Troponin',p:'s'}],
+     fl:['High acuity','Potential deterioration','Close monitoring']},
+  3:{th:'ฉุกเฉิน (Urgent)',en:'Level 3',time:'ภายใน 30 นาที',cls:'l3',
+     act:[{i:'🪑',t:'นั่งรอพื้นที่สังเกตอาการ',p:'s'},{i:'📋',t:'วัด Vital Signs ทุก 15 นาที',p:'s'},{i:'💊',t:'ให้ยาแก้ปวดตามอาการ',p:'r'}],
+     fl:['Moderate acuity','Vital reassessment','Pain management']},
+  4:{th:'ไม่ฉุกเฉิน (Less Urgent)',en:'Level 4',time:'ภายใน 60 นาที',cls:'l4',
+     act:[{i:'🎫',t:'รับบัตรคิวตามลำดับ',p:'r'},{i:'📝',t:'กรอกแบบฟอร์มประวัติ',p:'r'},{i:'💊',t:'แจ้งยาประจำที่ใช้',p:'r'}],
+     fl:['Stable','Routine assessment','Follow-up']},
+  5:{th:'ไม่เร่งด่วน (Non-Urgent)',en:'Level 5',time:'ภายใน 120 นาที',cls:'l5',
+     act:[{i:'📅',t:'พิจารณานัดคลินิก',p:'r'},{i:'📄',t:'ซักประวัติโดยพยาบาล',p:'r'},{i:'ℹ️',t:'ให้คำแนะนำสุขภาพ',p:'r'}],
+     fl:['Non-urgent','Elective','Health education']}
+};
+var SIM=[
+  {c:'แน่นหน้าอก หายใจหอบ เหงื่อออก',l:2,s:.94,d:'ACS Rule out'},
+  {c:'ปวดท้องรุนแรง คลื่นไส้อาเจียน',l:3,s:.91,d:'Acute abdomen'},
+  {c:'ปวดหัว ตาพร่า ความดันสูง',l:3,s:.88,d:'Hypertensive urgency'},
+  {c:'ชาแขนขา ปากเบี้ยว พูดไม่ชัด',l:2,s:.86,d:'Stroke Alert'},
+  {c:'ไข้สูง หนาวสั่น ปวดเมื่อย',l:3,s:.82,d:'Febrile illness'},
+  {c:'หายใจลำบาก ไอมาก เสมหะมาก',l:3,s:.79,d:'COPD exacerbation'},
+];
+var FEAT=[
+  {n:'Vital Signs Composite Score',p:31.2},{n:'Chief Complaint Embedding',p:24.8},
+  {n:'Danger Symptom Count',p:18.5},{n:'อายุ + Comorbidity Index',p:11.3},
+  {n:'SpO₂ / Respiratory Rate',p:8.7},{n:'Pain Score (NRS)',p:5.5},
+];
+
+// ══ MAIN TRIAGE ══════════════════════════════
+// ══ CLAUDE API — NLP Chief Complaint Analysis ════════
+async function analyzeChiefWithClaude(inp){
+  var prompt = `คุณคือระบบ Triage โรงพยาบาลพระนครศรีอยุธยา
+วิเคราะห์ "Chief Complaint" แล้วตอบเป็น JSON เท่านั้น ห้ามมีข้อความอื่น
+
+ข้อมูลผู้ป่วย:
+- อายุ: ${inp.age} ปี เพศ: ${inp.sex==='M'?'ชาย':'หญิง'}
+- Chief Complaint: "${inp.chief}"
+- โรคประจำตัว: ${inp.ud||'ไม่มี'}
+- Vital Signs: BP ${inp.sbp||'ไม่ได้วัด'}/${inp.dbp||'-'}, HR ${inp.hr||'ไม่ได้วัด'}, RR ${inp.rr||'ไม่ได้วัด'}, Temp ${inp.temp||'ไม่ได้วัด'}, SpO₂ ${inp.spo2||'ไม่ได้วัด'}%
+- Pain score: ${inp.pain||0}/10
+- GCS: ${inp.gcs||'ไม่ได้ประเมิน'}
+
+ประเมินและตอบ JSON รูปแบบนี้เท่านั้น:
+{
+  "level": <1-5>,
+  "reasoning": "<เหตุผลสั้นๆ ภาษาไทย 1-2 ประโยค>",
+  "keywords": ["<คำสำคัญที่พบ>"],
+  "red_flags": ["<อาการอันตรายที่ต้องระวัง>"],
+  "negation": <true ถ้าพบ negation เช่น "ไม่ปวด" false ถ้าไม่มี>,
+  "confidence": <0.0-1.0>
+}
+
+เกณฑ์ระดับ:
+1 = วิกฤต ต้องช่วยชีวิตทันที (CPR, หยุดหายใจ, shock, ไม่รู้สึกตัว)
+2 = ฉุกเฉินมาก รอไม่ได้ (chest pain, stroke, severe dyspnea, GCS ลดลง)
+3 = ฉุกเฉิน ต้องดูแลเร็ว (ปวดรุนแรง, ไข้สูง, อุบัติเหตุ, อาเจียนมาก)
+4 = ไม่ฉุกเฉิน (ไข้ทั่วไป, ปวดท้องเล็กน้อย, เจ็บคอ, ผื่น)
+5 = ไม่เร่งด่วน (นัดตรวจ, รับยา, ตรวจสุขภาพ)`;
+
+  var resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 400,
+      messages: [{role:'user', content: prompt}]
+    })
+  });
+  if(!resp.ok) throw new Error('API error: '+resp.status);
+  var data = await resp.json();
+  var text = data.content[0].text.trim();
+  // strip markdown code fences if present
+  text = text.replace(/^```json\s*/,'').replace(/\s*```$/,'').trim();
+  return JSON.parse(text);
+}
+
+async function runTriage(){
+  var chief=document.getElementById('chief').value.trim();
+  if(!chief){alert('กรุณาระบุอาการนำ (Chief Complaint)');return;}
+
+  var inp={
+    hn:  document.getElementById('hn').value.trim()||('PT'+String(Date.now()).slice(-6)),
+    name:document.getElementById('ptname').value.trim()||'ไม่ระบุชื่อ',
+    age: parseInt(document.getElementById('age').value)||0,
+    sex: document.getElementById('sex').value,
+    ud:  document.getElementById('ud').value.trim(),
+    chief:chief, ins:selIns2,
+    insNo:document.getElementById('ins-no').value.trim(),
+    note: document.getElementById('note').value.trim(),
+    sbp:  parseInt(document.getElementById('sbp').value)||null,
+    dbp:  parseInt(document.getElementById('dbp').value)||null,
+    hr:   parseInt(document.getElementById('hr').value)||null,
+    rr:   parseInt(document.getElementById('rr').value)||null,
+    temp: parseFloat(document.getElementById('temp').value)||null,
+    spo2: parseInt(document.getElementById('spo2').value)||null,
+    pain: parseInt(document.getElementById('pain').value)||null,
+    gcsE: parseInt(document.getElementById('gcs-e').value)||null,
+    gcsV: parseInt(document.getElementById('gcs-v').value)||null,
+    gcsM: parseInt(document.getElementById('gcs-m').value)||null,
+  };
+  inp.gcs = (inp.gcsE && inp.gcsV && inp.gcsM) ? inp.gcsE + inp.gcsV + inp.gcsM : null;
+  inp.isPed = inp.age > 0 && inp.age < 15;
+
+  document.getElementById('welcome').style.display='none';
+  document.getElementById('res').style.display='none';
+  document.getElementById('res').classList.remove('on');
+  document.getElementById('proc').classList.add('on');
+  document.getElementById('btn-ai').classList.add('loading');
+  document.getElementById('bt').textContent='กำลังประเมิน...';
+
+  var steps=['s1','s2','s3','s4','s5'];
+  var labels=[
+    'Claude NLP — วิเคราะห์ Chief Complaint...',
+    'ตรวจ Negation & Context...',
+    'XGBoost + Vital Score + GCS...',
+    'Pediatric / Sepsis / Stroke rules...',
+    'Ensemble + Clinical Safety Rules...'
+  ];
+
+  // อัปเดต step labels
+  steps.forEach(function(id,i){
+    var el=document.getElementById(id);
+    if(el){ var t=el.querySelector('.pd'); if(t) el.innerHTML='<div class="pd"></div>'+labels[i]; }
+  });
+
+  // เริ่ม animation steps พร้อม Claude API call คู่กัน
+  var si=0;
+  var apiDone=false, animDone=false;
+  var claudeResult=null;
+
+  function tryShowRes(){
+    if(apiDone && animDone){ showRes(inp); }
+  }
+
+  function nxt(){
+    if(si>0){var p=document.getElementById(steps[si-1]);if(p)p.classList.add('dn');}
+    if(si<steps.length){
+      var c=document.getElementById(steps[si]);if(c)c.classList.add('on');
+      document.getElementById('proc-lbl').textContent=labels[si];
+      si++; setTimeout(nxt, 420+Math.random()*200);
+    } else {
+      animDone=true;
+      tryShowRes();
+    }
+  }
+  nxt();
+
+  // เรียก Claude API
+  try {
+    claudeResult = await analyzeChiefWithClaude(inp);
+    // ใส่ผล Claude ใน inp
+    inp.claudeNLP = claudeResult;
+    inp.claudeCL  = claudeResult.level || analyzeChief(inp.chief);
+    inp.claudeReasoning = claudeResult.reasoning || '';
+    inp.claudeRedFlags  = claudeResult.red_flags  || [];
+    inp.claudeKeywords  = claudeResult.keywords   || [];
+    inp.claudeNegation  = claudeResult.negation   || false;
+    inp.claudeConf      = claudeResult.confidence || 0.8;
+  } catch(e) {
+    // Fallback → rule-based เดิม
+    console.warn('Claude API failed, using rule-based fallback:', e);
+    inp.claudeCL  = analyzeChief(inp.chief);
+    inp.claudeNLP = null;
+    inp.claudeReasoning = 'ใช้ rule-based fallback (API ไม่พร้อมใช้งาน)';
+    inp.claudeRedFlags  = [];
+    inp.claudeKeywords  = [];
+    inp.claudeNegation  = false;
+    inp.claudeConf      = 0.5;
+  }
+  apiDone = true;
+  tryShowRes();
+}
+
+// ══ SHOW RESULTS ═════════════════════════════
+function showRes(inp){
+  // ใช้ผล Claude NLP ถ้ามี ไม่งั้น fallback rule-based
+  var cl = inp.claudeCL || analyzeChief(inp.chief);
+  var vs=getVitalScore(), ds=getDangerScore();
+
+  // กำหนดคะแนนทางคลินิกเพื่อใช้ควบคุมความปลอดภัยสูงสุด (Clinical Override Limit)
+  var clinicalLimit = 5;
+  var checkedSyms = Array.from(document.querySelectorAll('.sym input:checked')).map(function(cb) { return cb.value; });
+
+  // ── GCS override (สำคัญสุด)
+  if(inp.gcs !== null){
+    if(inp.gcs <= 8)  clinicalLimit = 1;   // ใส่ท่อ = L1
+    else if(inp.gcs <= 12) clinicalLimit = Math.min(clinicalLimit, 2); // L2
+    else if(inp.gcs <= 13) clinicalLimit = Math.min(clinicalLimit, 3); // L3
+  }
+
+  // ── Pediatric MOPH override
+  if(inp.isPed){
+    var pedHighSyms = ['ped_stridor','ped_grunting','ped_retracting','ped_cyanosis','ped_bulging_fontanel','ped_petechiae'];
+    var pedModSyms  = ['ped_poor_feeding','ped_dehydration'];
+    var hasPedHigh  = checkedSyms.some(function(s){ return pedHighSyms.indexOf(s)>=0; });
+    var hasPedMod   = checkedSyms.some(function(s){ return pedModSyms.indexOf(s)>=0; });
+    if(hasPedHigh)  clinicalLimit = Math.min(clinicalLimit, 2);
+    else if(hasPedMod) clinicalLimit = Math.min(clinicalLimit, 3);
+    // ESI Pediatric: fever in infant <3 months → L2
+    if(inp.age < 1 && inp.temp && inp.temp >= 38.0) clinicalLimit = Math.min(clinicalLimit, 2);
+    // ทารก <28 วัน ไข้ใดๆ → L1
+    // (ต้องบันทึกในหมายเหตุเอง เพราะไม่รู้วัน)
+  }
+
+  // ── ตรวจว่า Vital Signs ที่กรอกมาปกติทั้งหมดหรือไม่
+  // (ถ้าไม่ได้กรอกค่าใด ถือว่าไม่มีข้อมูลนั้น ไม่ใช้ใน override)
+  var hasAbnormalVital = (
+    (inp.spo2 !== null && inp.spo2 < 94) ||
+    (inp.sbp  !== null && (inp.sbp < 90 || inp.sbp > 180)) ||
+    (inp.hr   !== null && (inp.hr  < 50 || inp.hr  > 120)) ||
+    (inp.rr   !== null && (inp.rr  < 10 || inp.rr  > 28))  ||
+    (inp.temp !== null && (inp.temp >= 39.0 || inp.temp < 35.0))
+  );
+
+  // ── L1 Danger Zone ตาม MOPH ED Triage 2561 (ใช้ได้ทุกวัย รวมเด็ก)
+  // CPR | ETtube | GCS≤8 | O2sat<90 | life-threatening arrhythmia | shock(SBP<90/MAP<60) | seizure/apnea
+  var hasCriticalVital = (
+    (inp.spo2 !== null && inp.spo2 < 90) ||
+    (inp.sbp  !== null && inp.sbp  < 80) ||       // < 80 = critical; < 90 = L1 per MOPH
+    (inp.hr   !== null && (inp.hr < 40 || inp.hr > 150)) ||
+    (inp.rr   !== null && (inp.rr > 30 || inp.rr < 8))  ||
+    (inp.gcs  !== null && inp.gcs <= 8)             // GCS ≤ 8 = L1 (MOPH & ESI)
+  );
+  // SBP<90 → MOPH L1 threshold สำหรับทุกวัย (pediatric SBP ปกติต่ำกว่า = เป็น warning ไม่ใช่ critical ถ้าอายุน้อย)
+  var hasMOPHShock = inp.sbp !== null && inp.sbp < 90;
+  if(hasMOPHShock && !hasCriticalVital){ clinicalLimit = Math.min(clinicalLimit, 2); }
+  // ACS: อายุ>35 + chest pain → min L2
+  var acsAlert = checkACS(inp);
+  if(acsAlert && acsAlert.show){ clinicalLimit = Math.min(clinicalLimit, 2); }
+  // Stroke fast track ≥2 items → min L2
+  var strokeAlert = checkStroke(inp);
+  if(strokeAlert && strokeAlert.befast >= 2){ clinicalLimit = Math.min(clinicalLimit, 2); }
+  // Early Sepsis qSOFA≥2 → min L2
+  var sepsisAlert = checkSepsis(inp);
+  if(sepsisAlert && sepsisAlert.qsofa >= 2){ clinicalLimit = Math.min(clinicalLimit, 2); }
+  // ── เด็ก: Pain score สูงแต่ Vital ปกติ → ไม่ up-triage (ตามเกณฑ์ภาพ)
+  var pedPainOnly = false;
+  if(inp.isPed){
+    var pedHR = inp.hr, pedRR = inp.rr, pedSp = inp.spo2;
+    var pedDZcheck = isPedDangerZone(inp.age, pedHR, pedRR, pedSp);
+    var sbpNormal = inp.sbp === null || inp.sbp >= getPedGroup(inp.age).sbpLo;
+    if(!pedDZcheck.any && sbpNormal){
+      pedPainOnly = true; // Vital ปกติ → pain ไม่ up-triage
+    }
+  }
+  // syncope + SpO₂ ต่ำวิกฤตร่วมกัน = L1
+  var syncopeHypoxia = (checkedSyms.indexOf('syncope') >= 0 && inp.spo2 !== null && inp.spo2 < 90);
+
+  if (hasCriticalVital || syncopeHypoxia) {
+    clinicalLimit = 1;
+  }
+  // ── L2: Vital ผิดปกติชัดเจน หรือ อาการ high-risk ร่วมกับ Vital ผิดปกติ
+  else if ((inp.spo2 !== null && inp.spo2 <= 94) || 
+           (inp.sbp  !== null && (inp.sbp < 90 || inp.sbp > 180)) || 
+           (inp.hr   !== null && (inp.hr < 50 || inp.hr > 120)) || 
+           (inp.rr   !== null && (inp.rr < 10 || inp.rr > 24)) ||
+           (inp.pain !== null && inp.pain >= 8 && !pedPainOnly) ||
+           // อาการ high-risk ต้องมี Vital ผิดปกติร่วมด้วยจึงจะ override เป็น L2
+           (hasAbnormalVital && checkedSyms.some(function(s){
+             return ['chest_pain','dyspnea','syncope','altered','seizure','weakness'].indexOf(s) >= 0;
+           }))) {
+    clinicalLimit = Math.min(clinicalLimit, 2);
+  }
+  // ── L2 fallback: อาการ high-risk แต่ Vital ปกติทั้งหมด → cap ที่ L3 เท่านั้น
+  // (ต้องมี Vital ผิดปกติร่วมจึงจะเป็น L2 ได้)
+  else if (checkedSyms.some(function(s){
+             return ['chest_pain','dyspnea','syncope','altered','seizure','weakness'].indexOf(s) >= 0;
+           })) {
+    clinicalLimit = Math.min(clinicalLimit, 3);
+  }
+  // ── L3: Vital เริ่มผิดปกติ หรือ อาการเสี่ยงรอง
+  else if ((inp.sbp  !== null && (inp.sbp < 100 || inp.sbp > 160)) || 
+           (inp.hr   !== null && (inp.hr < 60 || inp.hr > 100)) || 
+           (inp.temp !== null && inp.temp >= 38.0) ||
+           (inp.pain !== null && inp.pain >= 5) ||
+           checkedSyms.some(function(s){
+             return ['bleeding','vomit','fever','trauma'].indexOf(s) >= 0;
+           })) {
+    clinicalLimit = Math.min(clinicalLimit, 3);
+  }
+
+  // ปรับระดับ Chief Complaint ให้อยู่ภายใต้กรอบของ Clinical Limit เพื่อความปลอดภัย
+  var clAdjusted = Math.min(cl, clinicalLimit);
+
+  // ── Vital Floor: กำหนด level ต่ำสุดที่ยอมให้ผลเป็น
+  //   Vital วิกฤต → floor = 1 (L1 ได้)
+  //   Vital ผิดปกติ → floor = 2 (L2 ได้)
+  //   Vital ปกติทั้งหมด → floor = 3 (ต่ำสุด L3 เท่านั้น)
+  var vitalFloor = hasCriticalVital || syncopeHypoxia ? 1 : hasAbnormalVital ? 2 : 3;
+
+  // DS penalty ปรับเฉพาะเมื่อมี Vital ผิดปกติร่วม ป้องกันการ over-triage
+  var dsPenalty = (ds > 6 && hasAbnormalVital) ? 2 : (ds > 3 && hasAbnormalVital) ? 1 : 0;
+  var vsPenalty = vs > 4 ? 1 : 0;
+
+  var adj = Math.max(vitalFloor, Math.min(5, clAdjusted - dsPenalty - vsPenalty));
+  var xp=xgbP(vs,ds,clAdjusted), sp=sbertP(clAdjusted), ep=ensP(xp,sp);
+  var xl=argmax(xp)+1, sl=argmax(sp)+1;
+  // bound el ด้วย clinicalLimit ป้องกัน SBERT/XGB ดึง level ต่ำกว่า clinical safety
+  var el=Math.max(vitalFloor, Math.min(clinicalLimit, argmax(ep)+1));
+  var fl=Math.max(vitalFloor,Math.min(5,Math.round((adj+el)/2)));
+  var conf=Math.round(Math.max.apply(null,ep)*100);
+  var lv=LVL[fl];
+  var sim=[].concat(SIM).sort(function(){return Math.random()-.5;}).slice(0,4);
+  var now=new Date();
+  var tStr=now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+  var dStr=now.toLocaleDateString('th-TH');
+  var fc=fl<=2?'fr':fl===3?'fo':'fg';
+  var isSso=inp.ins==='SSO';
+
+  function priCls(p){return p==='u'?'pu':p==='s'?'ps2':'pr';}
+  function priTh(p){return p==='u'?'เร่งด่วน':p==='s'?'โดยเร็ว':'ปกติ';}
+  function vcls(v,lo,hi){return !v?'':v<lo||v>hi?'crit':'';}
+
+  var ssoBadge=isSso?'<span class="sso-badge">🏢 ประกันสังคม</span>':
+    inp.ins?('<span style="background:#F0F4F9;color:var(--muted);border-radius:20px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:5px;">'+INS_LBL[inp.ins]+'</span>'):'';
+
+  var h='';
+  if(isSso) h+=`<div class="sso-bar"><span style="font-size:18px;">🏢</span><div><div class="sso-title">สิทธิ์ประกันสังคม (SSO)</div><div class="sso-det">เลขที่: ${inp.insNo||'—'} · รพ.คู่สัญญา: รพ.พระนครศรีอยุธยา · ต้องส่งใบเบิกสิทธิ์หลังการรักษา</div></div></div>`;
+
+  h+=`<div class="tb ${lv.cls}">
+    <div class="tc"><div class="tn">${fl}</div><div class="tv">${lv.en}</div></div>
+    <div class="ti">
+      <div class="tna">${lv.th}${ssoBadge}</div>
+      <div class="tt">⏱ ${lv.time} · HN: ${inp.hn} · ${inp.name} (${inp.age||'—'} ปี ${inp.sex==='M'?'ชาย':inp.sex==='F'?'หญิง':''})${inp.isPed?' 👶':''}${inp.gcs!==null?' · GCS '+inp.gcs+'/15':''}</div>
+      <div class="tcf"><span>Confidence</span><div class="cb"><div class="cf" style="width:${conf}%"></div></div><span style="font-family:var(--mono)">${conf}%</span></div>
+    </div>
+    <div style="text-align:right;font-size:10px;color:var(--muted)">
+      <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--txt)">${conf}%</div>
+      <div>Ensemble</div><div style="font-family:var(--mono);margin-top:2px">${tStr}</div>
+    </div>
+  </div>
+
+  ${fl<=2?`
+  <div style="background:linear-gradient(135deg,#B71C1C,#C62828);color:#fff;border-radius:9px;padding:13px 16px;display:flex;align-items:center;gap:12px;margin-top:6px;box-shadow:0 3px 12px rgba(183,28,28,.35);">
+    <span style="font-size:28px;animation:pulse 1s infinite;">🚨</span>
+    <div style="flex:1;">
+      <div style="font-size:15px;font-weight:800;letter-spacing:.3px;">กรุณาไปห้องฉุกเฉินทันที</div>
+      <div style="font-size:11px;opacity:.9;margin-top:2px;">แจ้งเจ้าหน้าที่ที่เคาน์เตอร์ห้องฉุกเฉิน — ไม่ต้องรอคิว</div>
+    </div>
+    <div style="text-align:center;background:rgba(255,255,255,.15);border-radius:8px;padding:6px 12px;">
+      <div style="font-size:9px;opacity:.8;">ห้องฉุกเฉิน</div>
+      <div style="font-size:18px;">🏥</div>
+      <div style="font-size:9px;font-weight:700;">ER</div>
+    </div>
+  </div>`:`
+  <div style="background:linear-gradient(135deg,#1565C0,#1976D2);color:#fff;border-radius:9px;padding:13px 16px;display:flex;align-items:center;gap:12px;margin-top:6px;box-shadow:0 3px 12px rgba(21,101,192,.3);">
+    <span style="font-size:28px;">🏥</span>
+    <div style="flex:1;">
+      <div style="font-size:15px;font-weight:800;letter-spacing:.3px;">กรุณาไปตรวจตามนัดที่แผนก</div>
+      <div style="font-size:11px;opacity:.9;margin-top:2px;">แสดงบัตรนัดที่เคาน์เตอร์แผนกที่ได้รับนัดหมาย</div>
+    </div>
+    <div style="text-align:center;background:rgba(255,255,255,.15);border-radius:8px;padding:6px 12px;">
+      <div style="font-size:9px;opacity:.8;">ระดับ</div>
+      <div style="font-size:18px;font-weight:800;font-family:var(--mono);">L${fl}</div>
+      <div style="font-size:9px;">${lv.en}</div>
+    </div>
+  </div>`}
+`;
+
+  h+=`<div style="background:var(--card);border:1px solid var(--bdr);border-radius:10px;overflow:hidden;">
+
+    ${acsAlert&&acsAlert.show?`<div style="background:#C62828;color:#fff;padding:10px 14px;display:flex;align-items:center;gap:10px;font-weight:700;font-size:13px;letter-spacing:.3px;">
+      <span style="font-size:20px;animation:pulse 1s infinite;">🫀</span>
+      <span>ทำ EKG ด่วนก่อนพบแพทย์</span>
+      <span style="background:rgba(255,255,255,.2);border-radius:20px;padding:2px 10px;font-size:10px;font-weight:600;margin-left:4px;">12-lead EKG ภายใน 10 นาที</span>
+      <span style="margin-left:auto;font-size:10px;font-weight:400;opacity:.85;">Door-to-EKG &lt;10 min | Door-to-Balloon (STEMI) &lt;90 min</span>
+    </div>`:''}
+
+    <div class="tabs">
+      <div class="tab on" onclick="swTab('nurse',this)">👩‍⚕️ พยาบาล</div>
+      <div class="tab" onclick="swTab('doctor',this)">👨‍⚕️ แพทย์</div>
+      <div class="tab" onclick="swTab('ai',this)">🤖 AI Detail</div>
+    </div>
+
+    <div id="t-nurse" class="tc-wrap on">
+      <div><div class="stitle">Vital Signs</div>
+      <div class="vs">
+        <div class="vs-i"><div class="vs-l">BP (mmHg)</div><div class="vs-v ${inp.sbp&&(inp.sbp<90||inp.sbp>180)?'crit':inp.sbp&&(inp.sbp<100||inp.sbp>160)?'warn':''}">${inp.sbp||'—'}/${inp.dbp||'—'}</div></div>
+        <div class="vs-i"><div class="vs-l">HR (bpm)</div><div class="vs-v ${inp.hr&&(inp.hr<50||inp.hr>120)?'crit':inp.hr&&(inp.hr<60||inp.hr>100)?'warn':''}">${inp.hr||'—'}</div></div>
+        <div class="vs-i"><div class="vs-l">RR (/min)</div><div class="vs-v ${inp.rr&&(inp.rr<10||inp.rr>24)?'crit':''}">${inp.rr||'—'}</div></div>
+        <div class="vs-i"><div class="vs-l">Temp (°C)</div><div class="vs-v ${inp.temp&&inp.temp>38.5?'warn':''}">${inp.temp||'—'}</div></div>
+        <div class="vs-i"><div class="vs-l">SpO₂ (%)</div><div class="vs-v ${inp.spo2&&inp.spo2<94?'crit':inp.spo2&&inp.spo2<96?'warn':''}">${inp.spo2||'—'}</div></div>
+        <div class="vs-i"><div class="vs-l">Pain (NRS)</div><div class="vs-v ${inp.pain>=8?'crit':inp.pain>=5?'warn':''}">${inp.pain||'—'}/10</div></div>
+        <div class="vs-i" style="grid-column:1/-1;background:${inp.gcs!==null?(inp.gcs<=8?'var(--red-bg)':inp.gcs<=12?'var(--orange-bg)':inp.gcs<=13?'var(--yellow-bg)':'var(--green-bg)'):''}">
+          <div class="vs-l">GCS (E+V+M)</div>
+          <div class="vs-v ${inp.gcs!==null?(inp.gcs<=8?'crit':inp.gcs<=12?'warn':'ok'):''}">
+            ${inp.gcs!==null?inp.gcs+'  (E'+inp.gcsE+'+V'+inp.gcsV+'+M'+inp.gcsM+')':'— (ไม่ได้ประเมิน)'}
+            ${inp.gcs!==null?(inp.gcs<=8?' 🚨 ใส่ท่อ!':inp.gcs<=12?' ⚠ Moderate TBI':inp.gcs<=13?' ⚠ Minor TBI':' ✓ ปกติ'):''}
+          </div>
+        </div>
+      </div></div>
+      <div style="display:flex;gap:7px;margin:2px 0;">
+        <div style="flex:1;background:var(--surf);border:1px solid var(--bdr);border-radius:6px;padding:7px 10px;font-size:11px;">
+          <span style="color:var(--muted);font-size:9px;font-weight:700;">VITAL SCORE</span>
+          <span style="font-family:var(--mono);font-size:18px;font-weight:700;color:${vs>=5?'var(--red)':vs>=2?'var(--orange)':'var(--green)'};">&nbsp;${vs}</span>
+        </div>
+        <div style="flex:1;background:var(--surf);border:1px solid var(--bdr);border-radius:6px;padding:7px 10px;font-size:11px;">
+          <span style="color:var(--muted);font-size:9px;font-weight:700;">DANGER SCORE</span>
+          <span style="font-family:var(--mono);font-size:18px;font-weight:700;color:${ds>=8?'var(--red)':ds>=4?'var(--orange)':'var(--green)'};">&nbsp;${Math.round(ds)}</span>
+          ${checkedSyms.length>0?`<span style="font-size:9px;color:var(--muted);display:block;margin-top:2px;">${checkedSyms.length} อาการที่เลือก</span>`:''}
+        </div>
+      </div>
+      <div><div class="stitle">แนวทางปฏิบัติ</div>
+      <div class="al">${lv.act.map(function(a){return `<div class="ai-r"><span class="ai-ico">${a.i}</span><span class="ai-txt">${a.t}</span><span class="ai-pri ${priCls(a.p)}">${priTh(a.p)}</span></div>`;}).join('')}</div></div>
+
+      ${inp.isPed ? `<div class="ped-criteria">
+        <div class="ped-crit-title">👶 เกณฑ์ Triage เด็ก — MOPH 5 ระดับ + ESI (${getPedGroup(inp.age).label})</div>
+        <div class="ped-crit-row"><div class="ped-lv-dot" style="background:var(--red)"></div><div class="ped-crit-txt"><span class="ped-crit-label">L1 วิกฤต (MOPH):</span> GCS≤8, SpO₂<90%, SBP<90/MAP<60, ชัก/Apnea, หยุดหายใจ/หัวใจ, ทารกตัวอ่อนไม่ร้อง, เด็กตกไม่ตอบสนอง, Severe respiratory distress</div></div>
+        <div class="ped-crit-row"><div class="ped-lv-dot" style="background:var(--orange)"></div><div class="ped-crit-txt"><span class="ped-crit-label">L2 ฉุกเฉินมาก (MOPH+ESI):</span> GCS 9-12, Stridor/Grunting รุนแรง, เขียวคล้ำ, กระหม่อมโป่ง, Petechiae, ทารก<3เดือนไข้≥38°C, ซึมสับสน, Pain score≥7+VS ผิดปกติ</div></div>
+        <div class="ped-crit-row"><div class="ped-lv-dot" style="background:var(--yellow)"></div><div class="ped-crit-txt"><span class="ped-crit-label">L3 ฉุกเฉิน:</span> GCS 13, หายใจเหนื่อย, ไข้สูง+Petechiae, ขาดน้ำปานกลาง, ชักครั้งแรก(หยุดแล้ว), ปวดรุนแรง</div></div>
+        <div class="ped-crit-row"><div class="ped-lv-dot" style="background:var(--green)"></div><div class="ped-crit-txt"><span class="ped-crit-label">L4:</span> ไข้ไม่ซับซ้อน, ท้องเสียไม่ขาดน้ำ, บาดเจ็บเล็กน้อย, ผื่น, เจ็บคอ (ต้องการ 1 resource)</div></div>
+        <div class="ped-crit-row"><div class="ped-lv-dot" style="background:var(--blue)"></div><div class="ped-crit-txt"><span class="ped-crit-label">L5:</span> ไอ/หวัดไม่มีภาวะแทรกซ้อน, นัดตรวจ, ฉีดวัคซีน (0 resource)</div></div>
+        <div style="margin-top:7px;padding-top:5px;border-top:1px solid #C8E6C9;font-size:9px;color:#1B5E20;line-height:1.7;">
+          <strong>📊 ESI v4 Danger Zone Vital Signs (Figure 6-1):</strong><br>
+          &lt;3เดือน: HR&gt;180, RR&gt;50 | 3mo–3ปี: HR&gt;160, RR&gt;40 | 3–8ปี: HR&gt;140, RR&gt;30 | ≥8ปี/ผู้ใหญ่: HR&gt;100, RR&gt;20<br>
+          SpO₂&lt;92% = Danger Zone ทุกวัย | Temp≥38°C ในเด็ก&lt;3ปี = ESI Pediatric Fever<br>
+          <strong>⚠️ MOPH L1 Absolute:</strong> GCS≤8, SpO₂&lt;90%, SBP&lt;90/MAP&lt;60, ชัก/Apnea, Severe resp distress (ทุกวัย)<br>
+          ${getPedGroup(inp.age).mophNote ? '💡 '+getPedGroup(inp.age).mophNote : ''}
+        </div>
+      </div>` : ''}
+
+      <div class="flags">${lv.fl.map(function(f){return `<span class="flag ${fc}">${f}</span>`;}).join('')}${isSso?'<span class="flag" style="background:var(--sso-bg);color:var(--sso);">🏢 ปกส — ต้องเบิกสิทธิ์</span>':''}${inp.isPed?'<span class="flag" style="background:#F3E5F5;color:#6A1B9A;">👶 Pediatric Danger Zone</span>':''}${inp.gcs!==null&&inp.gcs<=8?'<span class="flag fr">🚨 GCS≤8 — Airway!</span>':inp.gcs!==null&&inp.gcs<=12?'<span class="flag fo">⚠ GCS 9-12 — Moderate TBI</span>':''}${acsAlert&&acsAlert.show?'<span class="flag" style="background:#FFEBEE;color:#B71C1C;font-weight:700;">🫀 ส่ง EKG ก่อน!</span>':''}${strokeAlert&&strokeAlert.befast>=2?'<span class="flag" style="background:#E3F2FD;color:#0D47A1;font-weight:700;">🧠 Stroke Fast Track</span>':''}${sepsisAlert&&sepsisAlert.qsofa>=2?'<span class="flag" style="background:#FFEBEE;color:#B71C1C;font-weight:700;">🦠 Sepsis Alert!</span>':''}</div>
+
+      <!-- ══ ACS/EKG ALERT ══ -->
+      ${acsAlert&&acsAlert.show?`
+      <div class="alert-card alert-ekg" style="margin-top:8px;">
+        <div class="alert-hd">🫀 ส่งประเมิน EKG ก่อน — สงสัย ACS</div>
+        <div class="alert-body">
+          <div class="alert-row"><div class="alert-dot" style="background:#C62828"></div><span>${acsAlert.msg}</span></div>
+          <div class="alert-row"><div class="alert-dot" style="background:#C62828"></div><span><strong>ดำเนินการ:</strong> 12-lead EKG ภายใน 10 นาที · Troponin · Aspirin 300 mg (ถ้าไม่แพ้) · IV access · Monitor continuous</span></div>
+          <div style="margin-top:5px;font-size:9px;color:#B71C1C;font-weight:700;">⏱ Door-to-EKG goal: &lt;10 นาที | Door-to-Balloon (STEMI): &lt;90 นาที</div>
+        </div>
+      </div>` : ''}
+
+      <!-- ══ NEWS2 CARD ══ -->
+      ${(function(){
+        var n2 = calcNEWS2(inp);
+        var hasVital = inp.rr||inp.spo2||inp.temp||inp.sbp||inp.hr;
+        if(!hasVital) return '';
+        function sc(p){ return n2.params[p]?('<span style="font-family:var(--mono);font-weight:700;color:'+(n2.params[p].sc>=3?'var(--red)':n2.params[p].sc>=2?'var(--orange)':n2.params[p].sc>=1?'var(--yellow)':'var(--green)')+'">'+n2.params[p].sc+'</span>'):'—'; }
+        return `<div class="news-card" style="border-color:${n2.score>=7?'#EF5350':n2.score>=5?'#FF9800':'#4CAF50'}" >
+          <div class="news-header" style="background:${n2.score>=7?'#FFEBEE':n2.score>=5?'#FFF3E0':'#F1F8E9'}">
+            <span style="font-size:18px;">📊</span>
+            <span>NEWS2 Score</span>
+            <span class="news-score" style="color:${n2.score>=7?'var(--red)':n2.score>=5?'var(--orange)':'var(--green)'}">${n2.score}</span>
+            <span class="news-risk ${n2.riskCls}">${n2.riskTh}</span>
+          </div>
+          <div class="news-grid">
+            ${inp.rr?`<div class="news-param"><div class="news-pn">RR</div><div class="news-pv">${inp.rr}</div><div class="news-ps">คะแนน: ${sc('rr')} ${n2.params.rr?'('+n2.params.rr.lbl+')':''}</div></div>`:''}
+            ${inp.spo2?`<div class="news-param"><div class="news-pn">SpO₂</div><div class="news-pv">${inp.spo2}%</div><div class="news-ps">คะแนน: ${sc('spo2')} ${n2.params.spo2?'('+n2.params.spo2.lbl+')':''}</div></div>`:''}
+            <div class="news-param"><div class="news-pn">O₂</div><div class="news-pv" style="font-size:11px">${n2.params.o2.v}</div><div class="news-ps">คะแนน: <span style="font-family:var(--mono);font-weight:700;color:${n2.params.o2.sc>0?'var(--orange)':'var(--green)'}">${n2.params.o2.sc}</span></div></div>
+            ${inp.temp?`<div class="news-param"><div class="news-pn">Temp</div><div class="news-pv">${inp.temp}°C</div><div class="news-ps">คะแนน: ${sc('temp')} ${n2.params.temp?'('+n2.params.temp.lbl+')':''}</div></div>`:''}
+            ${inp.sbp?`<div class="news-param"><div class="news-pn">SBP</div><div class="news-pv">${inp.sbp}</div><div class="news-ps">คะแนน: ${sc('sbp')} ${n2.params.sbp?'('+n2.params.sbp.lbl+')':''}</div></div>`:''}
+            ${inp.hr?`<div class="news-param"><div class="news-pn">HR</div><div class="news-pv">${inp.hr}</div><div class="news-ps">คะแนน: ${sc('hr')} ${n2.params.hr?'('+n2.params.hr.lbl+')':''}</div></div>`:''}
+            <div class="news-param"><div class="news-pn">AVPU</div><div class="news-pv" style="font-size:11px">${n2.params.avpu.v}</div><div class="news-ps">คะแนน: <span style="font-family:var(--mono);font-weight:700;color:${n2.params.avpu.sc>0?'var(--red)':'var(--green)'}">${n2.params.avpu.sc}</span></div></div>
+          </div>
+          ${n2.score>=5?`<div style="padding:6px 12px;background:${n2.score>=7?'#FFEBEE':'#FFF3E0'};font-size:10px;color:${n2.score>=7?'#B71C1C':'#E65100'};font-weight:600;border-top:1px solid var(--bdr)">
+            ${n2.score>=7?'⚠️ NEWS2 ≥7: ติดต่อแพทย์ฉุกเฉินทันที — พิจารณา ICU':'⚠️ NEWS2 5-6: เพิ่มความถี่ติดตาม ทุก 1 ชั่วโมง — แจ้งแพทย์'}
+          </div>`:''}
+        </div>`;
+      })()}
+
+      <!-- ══ STROKE FAST TRACK ══ -->
+      ${(function(){
+        if(!strokeAlert||!strokeAlert.show) return '';
+        var col = strokeAlert.eligible?'alert-red':'alert-blue';
+        return `<div class="alert-card ${col}">
+          <div class="alert-hd">🧠 Stroke Fast Track${strokeAlert.eligible?' — ELIGIBLE ✓':strokeAlert.befast>=1?' — Possible':' — Chief Complaint'}</div>
+          <div class="alert-body">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:5px;">BE-FAST Checklist (${strokeAlert.befast}/5 รายการ)</div>
+            <div class="fast-grid">
+              ${[
+                {k:'fast_balance', lbl:'B — เดินเซ/ทรงตัวไม่ได้'},
+                {k:'fast_eyes',    lbl:'E — ตามัว/มองไม่เห็น'},
+                {k:'fast_face',    lbl:'F — ปากเบี้ยว/หน้าเบี้ยว'},
+                {k:'fast_arm',     lbl:'A — แขนอ่อนแรงข้างเดียว'},
+                {k:'fast_speech',  lbl:'S — พูดไม่ชัด/พูดไม่ได้'}
+              ].map(function(item){
+                var checked = strokeAlert.hasFast.indexOf(item.k) >= 0;
+                return '<div class="fast-item '+(checked?'fast-pos':'fast-neg')+'"><span class="'+(checked?'cr-pos':'cr-neg')+'">'+(checked?'✓ ':'○ ')+'</span>'+item.lbl+'</div>';
+              }).join('')}
+              <div class="fast-item ${strokeAlert.hasTime?'fast-pos':'fast-neg'}"><span class="${strokeAlert.hasTime?'cr-pos':'cr-neg'}">${strokeAlert.hasTime?'✓ ':'○ '}</span>T — เวลาเริ่มอาการ &lt;4.5 ชม.</div>
+            </div>
+            ${strokeAlert.chiefHit.length>0?`<div style="margin-top:4px;font-size:9px;color:#1565C0;">📝 Chief complaint: พบคำที่สอดคล้อง — ${strokeAlert.chiefHit.join(', ')}</div>`:''}
+            ${strokeAlert.eligible?`<div style="margin-top:6px;padding:6px 9px;background:#FFEBEE;border-radius:5px;font-size:10px;color:#B71C1C;font-weight:700;">
+              🚨 Activate Stroke Fast Track — แจ้งทีม Stroke ทันที<br>
+              Door-to-CT &lt;25 นาที | tPA window &lt;4.5 ชม. | ประเมิน NIHSS
+            </div>`:strokeAlert.befast>=1?`<div style="margin-top:5px;font-size:10px;color:#0D47A1;">⚠️ BE-FAST ${strokeAlert.befast}/5 — ประเมิน NIHSS | เตรียม CT Brain | บันทึกเวลาเริ่มอาการ</div>`:''}
+          </div>
+        </div>`;
+      })()}
+
+      <!-- ══ EARLY SEPSIS ══ -->
+      ${(function(){
+        if(!sepsisAlert||!sepsisAlert.show) return '';
+        var col = sepsisAlert.severity==='HIGH'?'alert-red':'alert-orange';
+        return `<div class="alert-card ${col}">
+          <div class="alert-hd">🦠 Early Sepsis Alert${sepsisAlert.severity==='HIGH'?' — qSOFA ≥2':' — SIRS ≥2'}</div>
+          <div class="alert-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px;">
+              <div style="font-size:10px;">
+                <div style="font-weight:700;margin-bottom:3px;">qSOFA (${sepsisAlert.qsofa}/3)</div>
+                <div><span class="${sepsisAlert.qsofaRR?'cr-pos':'cr-neg'}">${sepsisAlert.qsofaRR?'✓':'○'}</span> RR ≥22 (${inp.rr||'N/A'})</div>
+                <div><span class="${sepsisAlert.qsofaAMS?'cr-pos':'cr-neg'}">${sepsisAlert.qsofaAMS?'✓':'○'}</span> Altered mentation</div>
+                <div><span class="${sepsisAlert.qsofaSBP?'cr-pos':'cr-neg'}">${sepsisAlert.qsofaSBP?'✓':'○'}</span> SBP ≤100 (${inp.sbp||'N/A'})</div>
+              </div>
+              <div style="font-size:10px;">
+                <div style="font-weight:700;margin-bottom:3px;">SIRS (${sepsisAlert.sirs}/3)</div>
+                <div><span class="${sepsisAlert.sirsTemp?'cr-pos':'cr-neg'}">${sepsisAlert.sirsTemp?'✓':'○'}</span> Temp &gt;38 หรือ &lt;36 (${inp.temp||'N/A'})</div>
+                <div><span class="${sepsisAlert.sirsHR?'cr-pos':'cr-neg'}">${sepsisAlert.sirsHR?'✓':'○'}</span> HR &gt;90 (${inp.hr||'N/A'})</div>
+                <div><span class="${sepsisAlert.sirsRR?'cr-pos':'cr-neg'}">${sepsisAlert.sirsRR?'✓':'○'}</span> RR &gt;20 (${inp.rr||'N/A'})</div>
+              </div>
+            </div>
+            ${sepsisAlert.severity==='HIGH'?`<div style="padding:5px 8px;background:#FFEBEE;border-radius:5px;font-size:10px;color:#B71C1C;font-weight:700;">
+              🚨 Sepsis Bundle (1 ชั่วโมง): Blood culture ×2 ก่อนให้ยา → IV Abx → Lactate → IV Fluid 30 mL/kg → ติดตาม UO
+            </div>`:`<div style="padding:5px 8px;background:#FFF3E0;border-radius:5px;font-size:10px;color:#E65100;font-weight:600;">
+              ⚠️ สงสัย Infection → เก็บ CBC, blood culture, Lactate, UA — เฝ้าระวัง Septic shock
+            </div>`}
+          </div>
+        </div>`;
+      })()}
+    </div>
+
+    <div id="t-doctor" class="tc-wrap">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;font-size:12px;">
+        <div style="background:var(--surf);border:1px solid var(--bdr);border-radius:7px;padding:10px;">
+          <div style="font-size:9px;color:var(--muted);font-weight:700;letter-spacing:.5px;margin-bottom:5px;">PATIENT SUMMARY</div>
+          <div><strong>HN:</strong> ${inp.hn}</div>
+          <div><strong>ชื่อ:</strong> ${inp.name} (${inp.age} ปี ${inp.sex==='M'?'ชาย':'หญิง'})${inp.isPed?'<span class="ped-tag" style="margin-left:4px;font-size:8px;">👶 Ped</span>':''}</div>
+          <div><strong>สิทธิ์:</strong> ${INS_LBL[inp.ins]||'ไม่ระบุ'}</div>
+          <div><strong>โรคประจำตัว:</strong> ${inp.ud||'—'}</div>
+          ${inp.gcs!==null?`<div style="margin-top:3px;padding:3px 6px;border-radius:4px;background:${inp.gcs<=8?'var(--red-bg)':inp.gcs<=12?'var(--orange-bg)':'var(--green-bg)'}"><strong>GCS:</strong> ${inp.gcs}/15 (E${inp.gcsE}+V${inp.gcsV}+M${inp.gcsM}) ${inp.gcs<=8?'🚨 ใส่ท่อ!':inp.gcs<=12?'⚠ Moderate':inp.gcs<=13?'⚠ Minor':'✓ ปกติ'}</div>`:''}
+        </div>
+        <div style="background:var(--surf);border:1px solid var(--bdr);border-radius:7px;padding:10px;">
+          <div style="font-size:9px;color:var(--muted);font-weight:700;letter-spacing:.5px;margin-bottom:5px;">CHIEF COMPLAINT</div>
+          <div style="line-height:1.6;">"${inp.chief}"</div>
+          <div style="margin-top:5px;font-size:10px;color:var(--muted)">${inp.claudeNLP?'🤖 Claude NLP':'📋 Rule-based'} L${cl} · VS <strong style="color:var(--navy)">${vs}</strong> · DS <strong style="color:var(--navy)">${Math.round(ds)}</strong></div>
+          ${inp.claudeNLP?`<div style="margin-top:4px;padding:4px 7px;background:#E8F5E9;border-radius:5px;font-size:9px;color:#1B5E20;line-height:1.6;">
+            <strong>Claude:</strong> ${inp.claudeReasoning}
+            ${inp.claudeNegation?'<span style="background:#FFF3E0;color:#E65100;border-radius:3px;padding:1px 5px;margin-left:4px;">⚠️ Negation detected</span>':''}
+            ${inp.claudeRedFlags&&inp.claudeRedFlags.length?'<br><strong>Red flags:</strong> '+inp.claudeRedFlags.join(', '):''}
+            <br><strong>Confidence:</strong> ${Math.round((inp.claudeConf||0)*100)}%
+          </div>`:`<div style="margin-top:4px;font-size:9px;color:#E65100;background:#FFF3E0;border-radius:4px;padding:3px 7px;">⚠️ Claude API ไม่พร้อมใช้งาน — ใช้ Rule-based fallback</div>`}
+          <div style="margin-top:4px;font-size:9px;color:var(--muted);line-height:1.6;">
+            <strong>Vital Score (${vs}):</strong> ${vs===0?'ปกติทุกค่า':''
+              +(inp.sbp&&(inp.sbp<90||inp.sbp>180)?' BP วิกฤต(+3)':inp.sbp&&(inp.sbp<100||inp.sbp>160)?' BP ผิดปกติ(+1)':'')
+              +(inp.hr&&(inp.hr<50||inp.hr>120)?' HR วิกฤต(+2)':inp.hr&&(inp.hr<60||inp.hr>100)?' HR ผิดปกติ(+1)':'')
+              +(inp.rr&&(inp.rr<10||inp.rr>24)?' RR ผิดปกติ(+2)':'')
+              +(inp.spo2&&inp.spo2<92?' SpO₂ วิกฤต(+3)':inp.spo2&&inp.spo2<95?' SpO₂ ต่ำ(+2)':'')
+              +(inp.temp&&(inp.temp>=39||inp.temp<35)?' Temp วิกฤต(+2)':inp.temp&&(inp.temp>37.5||inp.temp<=36)?' Temp ผิดปกติ(+1)':'')
+              +(inp.pain&&inp.pain>=8?' Pain สูง(+2)':inp.pain&&inp.pain>=5?' Pain ปานกลาง(+1)':'')
+              +(inp.gcs!==null&&inp.gcs<=8?' 🚨 GCS≤8(+5)':inp.gcs!==null&&inp.gcs<=12?' GCS 9-12(+3)':inp.gcs!==null&&inp.gcs<=13?' GCS 13(+1)':'')
+              +(inp.isPed?' [เกณฑ์เด็ก '+getPedGroup(inp.age).label+']':'')
+            }
+          </div>
+          <div style="font-size:9px;color:var(--muted);line-height:1.6;">
+            <strong>Danger Score (${Math.round(ds)}):</strong> ${checkedSyms.length===0?'ไม่มีอาการอันตราย':checkedSyms.map(function(s){
+              var nm={chest_pain:'แน่นหน้าอก',dyspnea:'หายใจลำบาก',syncope:'หมดสติ',altered:'ซึมลง',seizure:'ชัก',weakness:'อ่อนแรง',bleeding:'เลือดออก',vomit:'อาเจียน',fever:'ไข้สูง',trauma:'บาดเจ็บ'};
+              var highR=['chest_pain','dyspnea','syncope','altered','seizure','weakness'];
+              return (nm[s]||s)+'('+(highR.indexOf(s)>=0?'+4':'+2')+')';
+            }).join(' ')}
+          </div>
+        </div>
+      </div>
+      <div><div class="stitle">Clinical Decision Support</div>
+      <div class="al">${lv.act.map(function(a){return `<div class="ai-r"><span class="ai-ico">${a.i}</span><span class="ai-txt">${a.t}</span><span class="ai-pri ${priCls(a.p)}">${priTh(a.p)}</span></div>`;}).join('')}</div></div>
+      ${inp.note?`<div style="background:#FFF8E1;border:1px solid #F9A825;border-radius:7px;padding:9px;font-size:12px;"><strong>📝 หมายเหตุ:</strong> ${inp.note}</div>`:''}
+      <div class="disc">⚠️ AI เป็นเพียงเครื่องมือสนับสนุน — การวินิจฉัยขั้นสุดท้ายอยู่ที่ดุลยพินิจของแพทย์</div>
+    </div>
+
+    <div id="t-ai" class="tc-wrap">
+      <!-- Claude NLP Result Card -->
+      ${inp.claudeNLP ? `<div style="background:linear-gradient(135deg,#E8F5E9,#E3F2FD);border:2px solid #66BB6A;border-radius:9px;padding:10px 13px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:7px;">
+          <span style="font-size:16px;">🤖</span>
+          <span style="font-weight:700;font-size:12px;color:#1B5E20;">Claude NLP Analysis</span>
+          <span style="background:#1B5E20;color:#fff;border-radius:20px;padding:1px 8px;font-size:9px;font-weight:700;">claude-sonnet-4</span>
+          <span style="margin-left:auto;font-size:10px;color:#2E7D32;font-weight:700;">Confidence: ${Math.round((inp.claudeConf||0)*100)}%</span>
+        </div>
+        <div style="font-size:11px;color:#1B5E20;line-height:1.7;margin-bottom:6px;">${inp.claudeReasoning}</div>
+        ${inp.claudeKeywords&&inp.claudeKeywords.length?`<div style="margin-bottom:4px;font-size:10px;"><span style="color:var(--muted);font-weight:600;">Keywords: </span>${inp.claudeKeywords.map(function(k){return '<span style="background:#C8E6C9;color:#1B5E20;border-radius:3px;padding:1px 6px;margin:1px;display:inline-block;">'+k+'</span>';}).join('')}</div>`:''}
+        ${inp.claudeRedFlags&&inp.claudeRedFlags.length?`<div style="font-size:10px;"><span style="color:var(--red);font-weight:600;">🚩 Red Flags: </span>${inp.claudeRedFlags.map(function(r){return '<span style="background:var(--red-bg);color:var(--red);border-radius:3px;padding:1px 6px;margin:1px;display:inline-block;">'+r+'</span>';}).join('')}</div>`:''}
+        ${inp.claudeNegation?`<div style="margin-top:5px;padding:3px 8px;background:#FFF3E0;border-radius:4px;font-size:10px;color:#E65100;font-weight:600;">⚠️ Negation detected — ระบบพบการปฏิเสธอาการ อาจส่งผลต่อความแม่นยำ</div>`:''}
+      </div>` : `<div style="background:#FFF3E0;border:1px solid #FFB74D;border-radius:8px;padding:9px 12px;margin-bottom:8px;font-size:11px;color:#E65100;">
+        ⚠️ Claude API ไม่พร้อมใช้งาน — ระบบใช้ Rule-based Keyword Matching แทน<br>
+        <span style="font-size:9px;color:var(--muted);">ตรวจสอบ API key หรือ network connection</span>
+      </div>`}
+      <div><div class="stitle">Parallel Evaluation</div>
+      <div class="pg">
+        <div class="mc xg">
+          <div class="mn">XGBoost</div>
+          <div class="ml" style="color:${fl<=2?'var(--red)':fl===3?'var(--orange)':'var(--green)'}">L${xl}</div>
+          <div class="ms">Tabular · Vitals</div>
+          <div class="sc-list">${xp.map(function(p,i){return `<div class="sc-r"><span class="sl">L${i+1}</span><div class="sb2"><div class="sf sf${i+1}" style="width:${Math.round(p*100)}%"></div></div><span class="sp">${Math.round(p*100)}%</span></div>`;}).join('')}</div>
+        </div>
+        <div class="mc sb">
+          <div class="mn">SBERT mMPNet</div>
+          <div class="ml" style="color:#8E44AD">L${sl}</div>
+          <div class="ms">Semantic NLP</div>
+          <div class="sc-list">${sp.map(function(p,i){return `<div class="sc-r"><span class="sl">L${i+1}</span><div class="sb2"><div class="sf sf${i+1}" style="width:${Math.round(p*100)}%"></div></div><span class="sp">${Math.round(p*100)}%</span></div>`;}).join('')}</div>
+        </div>
+        <div class="mc en">
+          <div class="mn">Ensemble 55/45</div>
+          <div class="ml" style="color:var(--blue)">L${fl}</div>
+          <div class="ms">Final Decision</div>
+          <div class="sc-list">${ep.map(function(p,i){return `<div class="sc-r"><span class="sl">L${i+1}</span><div class="sb2"><div class="sf sf${i+1}" style="width:${Math.round(p*100)}%"></div></div><span class="sp">${Math.round(p*100)}%</span></div>`;}).join('')}</div>
+        </div>
+      </div></div>
+      <div><div class="stitle">Feature Importance — XGBoost</div>
+      <div style="background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:11px;">
+        <div class="fl2">${FEAT.map(function(f,i){return `<div class="fr2"><span class="frk">${String(i+1).padStart(2,'0')}</span><span class="fn">${f.n}</span><div class="fb"><div class="ff" style="width:${(f.p/35*100).toFixed(0)}%"></div></div><span class="fp">${f.p}%</span></div>`;}).join('')}</div>
+      </div></div>
+      <div><div class="stitle">Similar Cases — Cosine Similarity</div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:5px;">Query: "${inp.chief.substring(0,48)}${inp.chief.length>48?'...':''}"</div>
+      <div class="sg2">${sim.map(function(c){return `<div class="sc2"><div class="sc2-c">${c.c}</div><div class="sc2-m">Triage L${c.l} · ${c.d}</div><span class="sc2-s">cos_sim: ${c.s.toFixed(2)}</span></div>`;}).join('')}</div></div>
+    </div>
+  </div>`;
+
+  // Save panel
+  h+=`<div class="sp-card">
+    <div class="sp-hdr">
+      <span style="font-size:18px">📊</span>
+      <span style="font-size:13px;font-weight:700;flex:1">บันทึกผล Triage → Google Sheets</span>
+      ${CFG.sid?`<a href="https://docs.google.com/spreadsheets/d/${CFG.sid}" target="_blank" style="font-size:11px;color:var(--blue);text-decoration:none;">📄 เปิด Sheet ↗</a>`:''}
+    </div>
+    <div class="sp-body">
+      <div class="sp-g">
+        <div class="fl"><label class="lbl">พยาบาลผู้ประเมิน</label>
+          <input type="text" id="save-nurse" value="${CFG.nurse||''}" placeholder="ชื่อพยาบาล"/></div>
+        <div class="fl"><label class="lbl">Triage Level (แก้ไขได้)</label>
+          <select id="save-lv">${[1,2,3,4,5].map(function(l){return `<option value="${l}"${l===fl?' selected':''}>${l} — ${LVL[l].th}</option>`;}).join('')}</select>
+        </div>
+      </div>
+      <div id="save-status" class="sp-status"></div>
+      <button class="btn btn-s" id="save-btn" style="width:100%;font-size:14px;padding:11px;"
+        onclick="saveSheets('${inp.hn}','${inp.name}',${inp.age},'${inp.sex}','${inp.ins}','${inp.chief.replace(/'/g,"\\'")}','${inp.note.replace(/'/g,"\\'")}',${vs},${Math.round(ds)},${xl},${sl},${conf},'${dStr}','${tStr}')">
+        💾 บันทึกลง Google Sheets
+      </button>
+      ${!CFG.url?`<p style="font-size:10px;color:var(--muted);text-align:center;">ยังไม่ได้ตั้งค่า — <a href="#" onclick="openSetup()" style="color:var(--blue)">ตั้งค่าเลย</a></p>`:''}
+    </div>
+  </div>
+
+  <!-- HL7 FHIR Card -->
+  <div class="sp-card" style="border:1px solid #90CAF9;">
+    <div class="sp-hdr" style="background:linear-gradient(135deg,#E3F2FD,#EDE7F6);">
+      <span style="font-size:18px">🔗</span>
+      <span style="font-size:13px;font-weight:700;flex:1;color:#0D47A1">ส่งข้อมูลเข้าระบบ รพ. (HL7 FHIR)</span>
+      <span style="font-size:9px;background:#1565C0;color:#fff;border-radius:20px;padding:1px 8px;font-weight:700;">FHIR R4</span>
+    </div>
+    <div class="sp-body">
+      <div class="sp-g">
+        <div class="fl" style="grid-column:1/-1;">
+          <label class="lbl">FHIR Server URL</label>
+          <input type="text" id="fhir-url" placeholder="https://fhir.pna-hospital.go.th/fhir  หรือ  https://hapi.fhir.org/baseR4 (ทดสอบ)"
+            value="${localStorage.getItem('fhir_url')||''}"
+            oninput="localStorage.setItem('fhir_url',this.value)"/>
+        </div>
+        <div class="fl">
+          <label class="lbl">API Key / Bearer Token (ถ้ามี)</label>
+          <input type="password" id="fhir-token" placeholder="Bearer eyJ..."
+            value="${localStorage.getItem('fhir_token')||''}"
+            oninput="localStorage.setItem('fhir_token',this.value)"/>
+        </div>
+        <div class="fl">
+          <label class="lbl">ส่ง Resource</label>
+          <select id="fhir-mode">
+            <option value="all">ทั้งหมด (Patient + Encounter + Vitals + Triage)</option>
+            <option value="triage">เฉพาะ Triage Level + Chief</option>
+            <option value="vitals">เฉพาะ Vital Signs + GCS</option>
+          </select>
+        </div>
+      </div>
+      <div id="fhir-status" style="font-size:11px;padding:5px 0;min-height:18px;"></div>
+      <button class="btn" id="fhir-btn" style="width:100%;font-size:13px;padding:10px;background:#1565C0;color:#fff;border:none;"
+        onclick="sendToFHIR(${JSON.stringify(inp).replace(/`/g,'\\`')}, ${fl})">
+        🔗 ส่งข้อมูลเข้า FHIR Server
+      </button>
+      <div style="margin-top:5px;font-size:9px;color:var(--muted);text-align:center;">
+        ทดสอบฟรี: ใส่ <strong>https://hapi.fhir.org/baseR4</strong> แล้วกดส่ง
+      </div>
+    </div>
+  </div>`;
+
+  h+=`<div class="disc">⚠️ ผลการประเมินจาก AI เป็นเพียงเครื่องมือสนับสนุนการตัดสินใจทางคลินิก — การวินิจฉัยขั้นสุดท้ายต้องผ่านการประเมินโดยบุคลากรทางการแพทย์ที่มีใบอนุญาตเสมอ</div>`;
+
+  var el=document.getElementById('res');
+  el.innerHTML=h; el.classList.add('on'); el.style.display='flex';
+  document.getElementById('proc').classList.remove('on');
+  ['s1','s2','s3','s4','s5'].forEach(function(s){var e=document.getElementById(s);if(e)e.classList.remove('on','dn');});
+  document.getElementById('btn-ai').classList.remove('loading');
+  document.getElementById('bt').textContent='ประเมิน Triage ด้วย AI';
+  document.getElementById('bi').textContent='⚡';
+
+  ptCount++; document.getElementById('today-cnt').textContent='ผู้ป่วยวันนี้: '+ptCount+' ราย';
+  document.getElementById('s-today').textContent=ptCount;
+  document.getElementById('q-cnt').textContent='('+ptCount+' ราย)';
+
+  var qItem=document.createElement('div'); qItem.className='qi';
+  var qBadge=isSso?'<span class="qb-sso">ปกส</span>':inp.ins==='UC'?'<span class="qb-uc">บทอง</span>':'';
+  qItem.innerHTML=`<div class="qd ql${fl}"></div><div class="qn">${inp.hn} (${inp.age||'?'})</div><div class="qc">${inp.chief.substring(0,10)}...</div>${qBadge}<div class="qt">${tStr}</div>`;
+  document.getElementById('q-list').prepend(qItem);
+
+  // ── Mobile: switch to result tab automatically + update nav icon
+  if(window.innerWidth <= 840){
+    // Update result nav button icon to show triage level color
+    var mnbRes = document.getElementById('mnb-result');
+    if(mnbRes){
+      var ico = mnbRes.querySelector('.mico');
+      if(ico) ico.textContent = fl===1?'🔴':fl===2?'🟠':fl===3?'🟡':fl===4?'🟢':'🔵';
+    }
+    // Show badge on result button if user is on another tab
+    if(mobCurrent !== 'result'){
+      var badge = document.getElementById('mob-result-badge');
+      if(badge) badge.classList.add('on');
+    }
+    // Auto-switch to result panel
+    setTimeout(function(){ mobSwitch('result'); }, 200);
+  }
+}
+
+// ══ TAB SWITCH ═══════════════════════════════
+function swTab(name,btn){
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
+  document.querySelectorAll('.tc-wrap').forEach(function(t){t.classList.remove('on');t.style.display='none';});
+  btn.classList.add('on');
+  var t=document.getElementById('t-'+name); if(t){t.classList.add('on');t.style.display='flex';}
+}
+
+// ══ SAVE TO SHEETS ════════════════════════════
+function saveSheets(hn,name,age,sex,ins,cc,note,vs,ds,xl,sl,conf,dStr,tStr){
+  var nurseVal=document.getElementById('save-nurse')?.value||CFG.nurse||'—';
+  var lvVal=parseInt(document.getElementById('save-lv')?.value)||3;
+  var stEl=document.getElementById('save-status');
+  var sBtn=document.getElementById('save-btn');
+  if(!CFG.url){
+    stEl.className='sp-status err';
+    stEl.textContent='❌ ยังไม่ได้ตั้งค่า Script URL — กด ⚙️ ตั้งค่า';
+    return;
+  }
+  stEl.className='sp-status saving'; stEl.textContent='⏳ กำลังบันทึก...';
+  sBtn.classList.add('saving'); sBtn.textContent='กำลังบันทึก...';
+  var payload={
+    date:dStr,time:tStr,hn:hn,name:name,age:age,
+    sex:sex==='M'?'ชาย':sex==='F'?'หญิง':'',
+    ins:INS_LBL[ins]||'ไม่ระบุ',cc:cc,vs:vs,ds:ds,
+    lv:lvVal,lvn:LVL[lvVal].th,conf:conf,
+    xgb:xl,sbert:sl,nurse:nurseVal,note:note
+  };
+  fetch(CFG.url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+  .then(function(){
+    stEl.className='sp-status ok'; stEl.textContent='✅ บันทึกสำเร็จ! ข้อมูลอยู่ใน Google Sheets แล้ว';
+    sBtn.textContent='✅ บันทึกแล้ว'; sBtn.style.background='#888';
+  })
+  .catch(function(err){
+    stEl.className='sp-status err'; stEl.textContent='❌ บันทึกไม่สำเร็จ: '+err.message;
+    sBtn.classList.remove('saving'); sBtn.textContent='💾 ลองอีกครั้ง'; sBtn.style.background='';
+  });
+}
+
+// ══ DROPDOWN MULTISELECT ════════════════════
+var dmsCustomDx = [], dmsCustomMed = [];
+var HIGH_ALERT = ['Warfarin','Heparin','Enoxaparin','Dabigatran','Rivaroxaban','Apixaban',
+  'Aspirin','Clopidogrel','Ticagrelor','Prasugrel','Insulin','Glibenclamide','Glipizide',
+  'Metformin','SGLT2i','Digoxin','Amiodarone','Adenosine','Nitrate','Adrenaline','Dopamine',
+  'Morphine','Fentanyl','Tramadol','Phenytoin','Valproate','Lithium','KCl IV','MgSO4',
+  'Methotrexate','Prednisolone','Cyclosporine','Colchicine'];
+
+function dmsTog(id){
+  var trigger = document.getElementById('dms-'+id+'-trigger');
+  var panel   = document.getElementById('dms-'+id+'-panel');
+  var isOpen  = panel.classList.contains('open');
+  // Close all
+  document.querySelectorAll('.dms-panel').forEach(function(p){ p.classList.remove('open'); });
+  document.querySelectorAll('.dms-trigger').forEach(function(t){ t.classList.remove('open'); });
+  if(!isOpen){
+    panel.classList.add('open');
+    trigger.classList.add('open');
+  }
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(e){
+  if(!e.target.closest('.dms-wrap')){
+    document.querySelectorAll('.dms-panel').forEach(function(p){ p.classList.remove('open'); });
+    document.querySelectorAll('.dms-trigger').forEach(function(t){ t.classList.remove('open'); });
+  }
+});
+
+function dmsChange(id){
+  var panel = document.getElementById('dms-'+id+'-panel');
+  var checked = Array.from(panel.querySelectorAll('input[type=checkbox]:checked')).map(function(cb){ return cb.value; });
+  var customArr = id==='dx' ? dmsCustomDx : dmsCustomMed;
+  dmsRenderTags(id, checked.concat(customArr));
+  dmsUpdateHidden();
+}
+
+function dmsRenderTags(id, values){
+  var container = document.getElementById('dms-'+id+'-tags');
+  if(values.length === 0){
+    container.innerHTML = '<span class="dms-placeholder">'+(id==='dx'?'เลือกโรคประจำตัว...':'เลือกยาประจำ...')+'</span>';
+    return;
+  }
+  container.innerHTML = values.map(function(v){
+    var isAlert = HIGH_ALERT.indexOf(v) >= 0;
+    return '<span class="dms-tag'+(isAlert?' alert':'')+'">'+v
+      +'<span class="dtx" onclick="dmsRemove(\''+id+'\',\''+v+'\',event)">✕</span></span>';
+  }).join('');
+}
+
+function dmsRemove(id, val, event){
+  event.stopPropagation();
+  // uncheck in panel
+  var panel = document.getElementById('dms-'+id+'-panel');
+  var cb = panel.querySelector('input[value="'+val+'"]');
+  if(cb) cb.checked = false;
+  // remove from custom
+  if(id==='dx') dmsCustomDx = dmsCustomDx.filter(function(v){ return v!==val; });
+  else          dmsCustomMed = dmsCustomMed.filter(function(v){ return v!==val; });
+  dmsChange(id);
+}
+
+function dmsAddCustom(id){
+  var inp = document.getElementById('dms-'+id+'-custom');
+  var val = inp.value.trim();
+  if(!val) return;
+  var customArr = id==='dx' ? dmsCustomDx : dmsCustomMed;
+  if(customArr.indexOf(val) < 0) customArr.push(val);
+  inp.value = '';
+  dmsChange(id);
+}
+
+function dmsUpdateHidden(){
+  // รวม dx + med → ud hidden input
+  var dxPanel  = document.getElementById('dms-dx-panel');
+  var medPanel = document.getElementById('dms-med-panel');
+  var dxVals   = Array.from(dxPanel.querySelectorAll('input[type=checkbox]:checked')).map(function(cb){ return cb.value; }).concat(dmsCustomDx);
+  var medVals  = Array.from(medPanel.querySelectorAll('input[type=checkbox]:checked')).map(function(cb){ return cb.value; }).concat(dmsCustomMed);
+  var combined = dxVals.concat(medVals);
+  document.getElementById('ud').value = combined.join(', ');
+}
+
+// ══ VOICE INPUT ══════════════════════════════
+var voiceRecog = null;
+var voiceActive = false;
+var voiceInterim = '';
+
+(function initVoice(){
+  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRecognition){
+    window.addEventListener('load', function(){
+      var ns = document.getElementById('voice-nosupport');
+      var btn = document.getElementById('voice-btn');
+      if(ns) ns.style.display = 'block';
+      if(btn){ btn.disabled = true; btn.style.opacity = '0.4'; btn.title = 'ไม่รองรับ — ใช้ Chrome หรือ Edge'; }
+    });
+    return;
+  }
+
+  voiceRecog = new SpeechRecognition();
+  voiceRecog.continuous = true;       // ฟังต่อเนื่อง ไม่หยุดเองหลังประโยค
+  voiceRecog.interimResults = true;   // แสดง partial result แบบ real-time
+  voiceRecog.maxAlternatives = 1;
+
+  voiceRecog.onstart = function(){
+    voiceActive = true;
+    var btn = document.getElementById('voice-btn');
+    var lbl = document.getElementById('vmic-lbl');
+    var ico = document.getElementById('vmic-ico');
+    var st  = document.getElementById('voice-status');
+    var stTxt = document.getElementById('voice-status-txt');
+    if(btn) btn.classList.add('listening');
+    if(lbl) lbl.textContent = 'หยุดฟัง';
+    if(ico) ico.textContent = '🔴';
+    if(st)  { st.className = 'voice-status on rec'; }
+    if(stTxt){ var lang = document.getElementById('voice-lang'); stTxt.textContent = 'กำลังฟัง... (' + (lang ? lang.options[lang.selectedIndex].text : '') + ')'; }
+  };
+
+  voiceRecog.onresult = function(e){
+    var textarea = document.getElementById('chief');
+    if(!textarea) return;
+    var base = textarea.getAttribute('data-base') || '';
+    var interim = '';
+    var final = '';
+    for(var i = e.resultIndex; i < e.results.length; i++){
+      var t = e.results[i][0].transcript;
+      if(e.results[i].isFinal){ final += t; }
+      else { interim += t; }
+    }
+    if(final){
+      var prev = textarea.getAttribute('data-base') || '';
+      var sep = prev && !prev.endsWith(' ') && !prev.endsWith('\n') ? ' ' : '';
+      var newBase = prev + sep + final;
+      textarea.setAttribute('data-base', newBase);
+      textarea.value = newBase;
+    } else {
+      var b = textarea.getAttribute('data-base') || '';
+      textarea.value = b + (b && interim ? ' ' : '') + interim;
+    }
+    // scroll to bottom
+    textarea.scrollTop = textarea.scrollHeight;
+  };
+
+  voiceRecog.onerror = function(e){
+    var st = document.getElementById('voice-status');
+    var stTxt = document.getElementById('voice-status-txt');
+    var msg = {
+      'not-allowed': '❌ ไม่ได้รับสิทธิ์ไมโครโฟน — กรุณาอนุญาตในเบราว์เซอร์',
+      'no-speech':   '⚠️ ไม่ได้ยินเสียง — ลองพูดอีกครั้ง',
+      'network':     '⚠️ ปัญหาเครือข่าย',
+      'aborted':     ''
+    }[e.error] || ('❌ Error: ' + e.error);
+    if(msg && st && stTxt){
+      st.className = 'voice-status on err';
+      stTxt.textContent = msg;
+    }
+    if(e.error !== 'aborted') stopVoice();
+  };
+
+  voiceRecog.onend = function(){
+    if(voiceActive){
+      // restart อัตโนมัติเมื่อ browser หยุดฟัง (timeout ทุก ~60s)
+      var lang = document.getElementById('voice-lang');
+      if(lang) voiceRecog.lang = lang.value;
+      try{ voiceRecog.start(); } catch(err){ stopVoice(); }
+    }
+  };
+})();
+
+function toggleVoice(){
+  if(!voiceRecog){
+    alert('เบราว์เซอร์นี้ไม่รองรับ Speech Recognition\nกรุณาใช้ Google Chrome หรือ Microsoft Edge');
+    return;
+  }
+  if(voiceActive){ stopVoice(); }
+  else { startVoice(); }
+}
+
+function startVoice(){
+  var lang = document.getElementById('voice-lang');
+  if(lang) voiceRecog.lang = lang.value;
+  // เก็บข้อความปัจจุบันเป็น base
+  var textarea = document.getElementById('chief');
+  if(textarea) textarea.setAttribute('data-base', textarea.value);
+  voiceActive = true;
+  try{ voiceRecog.start(); }
+  catch(err){
+    voiceActive = false;
+    var st = document.getElementById('voice-status');
+    var stTxt = document.getElementById('voice-status-txt');
+    if(st && stTxt){ st.className='voice-status on err'; stTxt.textContent='❌ ไม่สามารถเริ่มฟังได้: '+err.message; }
+  }
+}
+
+function stopVoice(){
+  voiceActive = false;
+  try{ voiceRecog.stop(); } catch(e){}
+  var btn  = document.getElementById('voice-btn');
+  var lbl  = document.getElementById('vmic-lbl');
+  var ico  = document.getElementById('vmic-ico');
+  var st   = document.getElementById('voice-status');
+  var stTxt= document.getElementById('voice-status-txt');
+  if(btn) btn.classList.remove('listening');
+  if(lbl) lbl.textContent = 'พูดอาการ';
+  if(ico) ico.textContent = '🎤';
+  // แสดง ok สักครู่แล้วซ่อน
+  var textarea = document.getElementById('chief');
+  if(textarea && textarea.value.trim()){
+    if(st && stTxt){ st.className='voice-status on ok'; stTxt.textContent='✅ บันทึกเสียงเรียบร้อย'; }
+    setTimeout(function(){ if(st) st.className='voice-status'; }, 2500);
+  } else {
+    if(st) st.className='voice-status';
+  }
+}
+
+function clearChief(){
+  var textarea = document.getElementById('chief');
+  if(textarea){ textarea.value=''; textarea.setAttribute('data-base',''); textarea.focus(); }
+  if(voiceActive) stopVoice();
+  var st = document.getElementById('voice-status');
+  if(st) st.className='voice-status';
+}
+function setChief(text){
+  var el = document.getElementById('chief');
+  if(!el) return;
+  el.value = text;
+  el.setAttribute('data-base', text);
+  el.focus();
+  el.style.borderColor = 'var(--blue)';
+  setTimeout(function(){ el.style.borderColor = ''; }, 700);
+}
+
+// ══ HL7 FHIR CONNECTOR ══════════════════════════════════
+var LOINC = {
+  sbp:  {code:'8480-6', display:'Systolic blood pressure',  unit:'mm[Hg]'},
+  dbp:  {code:'8462-4', display:'Diastolic blood pressure', unit:'mm[Hg]'},
+  hr:   {code:'8867-4', display:'Heart rate',               unit:'/min'},
+  rr:   {code:'9279-1', display:'Respiratory rate',         unit:'/min'},
+  temp: {code:'8310-5', display:'Body temperature',         unit:'Cel'},
+  spo2: {code:'59408-5',display:'Oxygen saturation',        unit:'%'},
+  pain: {code:'72514-3',display:'Pain severity score',      unit:'score'},
+};
+
+function fhirPatient(inp){
+  return {
+    resourceType:'Patient', id:'pna-'+inp.hn,
+    identifier:[{system:'https://pna-hospital.go.th/HN', value:inp.hn}],
+    name:[{text:inp.name}],
+    gender:inp.sex==='M'?'male':'female',
+  };
+}
+function fhirEncounter(inp){
+  return {
+    resourceType:'Encounter', status:'arrived',
+    class:{system:'http://terminology.hl7.org/CodeSystem/v3-ActCode', code:'EMER', display:'Emergency'},
+    subject:{reference:'Patient/pna-'+inp.hn},
+    period:{start:new Date().toISOString()},
+    location:[{location:{display:'ห้องฉุกเฉิน รพ.พระนครศรีอยุธยา'}}],
+  };
+}
+function fhirObservations(inp){
+  var obs=[];
+  ['sbp','dbp','hr','rr','temp','spo2','pain'].forEach(function(k){
+    if(inp[k]==null) return;
+    var lc=LOINC[k];
+    obs.push({
+      resourceType:'Observation', status:'final',
+      category:[{coding:[{system:'http://terminology.hl7.org/CodeSystem/observation-category',code:'vital-signs'}]}],
+      code:{coding:[{system:'http://loinc.org',code:lc.code,display:lc.display}]},
+      subject:{reference:'Patient/pna-'+inp.hn},
+      effectiveDateTime:new Date().toISOString(),
+      valueQuantity:{value:inp[k],unit:lc.unit,system:'http://unitsofmeasure.org',code:lc.unit}
+    });
+  });
+  if(inp.gcs){
+    obs.push({
+      resourceType:'Observation', status:'final',
+      category:[{coding:[{system:'http://terminology.hl7.org/CodeSystem/observation-category',code:'survey'}]}],
+      code:{coding:[{system:'http://loinc.org',code:'9269-2',display:'GCS Total'}]},
+      subject:{reference:'Patient/pna-'+inp.hn},
+      effectiveDateTime:new Date().toISOString(),
+      valueQuantity:{value:inp.gcs,unit:'score'},
+      component:[
+        {code:{coding:[{system:'http://loinc.org',code:'9267-6',display:'Eye opening'}]},    valueQuantity:{value:inp.gcsE||0}},
+        {code:{coding:[{system:'http://loinc.org',code:'9270-0',display:'Verbal response'}]},valueQuantity:{value:inp.gcsV||0}},
+        {code:{coding:[{system:'http://loinc.org',code:'9268-4',display:'Motor response'}]}, valueQuantity:{value:inp.gcsM||0}},
+      ]
+    });
+  }
+  return obs;
+}
+function fhirRiskAssessment(inp, triageLevel){
+  var lvNames=['','วิกฤต','ฉุกเฉินมาก','ฉุกเฉิน','ไม่ฉุกเฉิน','ไม่เร่งด่วน'];
+  var notes=['Chief:'+(inp.chief||''),'BP '+(inp.sbp||'?')+'/'+(inp.dbp||'?')+' HR '+(inp.hr||'?')+' RR '+(inp.rr||'?')+' Temp '+(inp.temp||'?')+' SpO2 '+(inp.spo2||'?')+'%','GCS:'+(inp.gcs||'N/A'),'Pain:'+(inp.pain||0)+'/10'];
+  return {
+    resourceType:'RiskAssessment', status:'final',
+    subject:{reference:'Patient/pna-'+inp.hn},
+    occurrenceDateTime:new Date().toISOString(),
+    method:{coding:[{system:'https://pna-hospital.go.th/triage-method',code:'AI-MOPH-5Level',display:'AI Triage MOPH 5 Levels'}]},
+    prediction:[{
+      outcome:{coding:[{system:'https://moph.go.th/triage-level',code:'L'+triageLevel,display:lvNames[triageLevel]||'L'+triageLevel}]},
+      probabilityDecimal:inp.claudeConf||0.8
+    }],
+    note:[{text:notes.join(' | ')}]
+  };
+}
+
+async function sendToFHIR(inp, triageLevel){
+  var url   = (document.getElementById('fhir-url')  ||{value:''}).value || localStorage.getItem('fhir_url')||'';
+  var token = (document.getElementById('fhir-token')||{value:''}).value || localStorage.getItem('fhir_token')||'';
+  var mode  = (document.getElementById('fhir-mode') ||{value:'all'}).value;
+  var stEl  = document.getElementById('fhir-status');
+  var btn   = document.getElementById('fhir-btn');
+
+  if(!url){
+    if(stEl) stEl.innerHTML='<span style="color:var(--red)">⚠️ กรุณาใส่ FHIR Server URL ก่อน</span>';
+    return;
+  }
+  if(btn){ btn.disabled=true; btn.textContent='⏳ กำลังส่ง...'; }
+  if(stEl) stEl.innerHTML='<span style="color:var(--blue)">⏳ กำลังส่งข้อมูลเข้า FHIR Server...</span>';
+
+  var base = url.replace(/\/$/,'');
+  var hdrs = {'Content-Type':'application/fhir+json','Accept':'application/fhir+json'};
+  if(token) hdrs['Authorization'] = token.startsWith('Bearer ')?token:'Bearer '+token;
+
+  async function fhirPut(res){
+    var r=await fetch(base+'/'+res.resourceType+'/'+res.id,{method:'PUT',headers:hdrs,body:JSON.stringify(res)});
+    if(!r.ok) throw new Error(res.resourceType+' PUT '+r.status);
+    return r.json();
+  }
+  async function fhirPost(res){
+    var r=await fetch(base+'/'+res.resourceType,{method:'POST',headers:hdrs,body:JSON.stringify(res)});
+    if(!r.ok) throw new Error(res.resourceType+' POST '+r.status);
+    return r.json();
+  }
+
+  var results=[]; var start=Date.now();
+  try{
+    if(mode==='all'||mode==='triage'){
+      await fhirPut(fhirPatient(inp));           results.push('Patient ✅');
+      await fhirPost(fhirEncounter(inp));         results.push('Encounter ✅');
+      await fhirPost(fhirRiskAssessment(inp,triageLevel)); results.push('Triage ✅');
+    }
+    if(mode==='all'||mode==='vitals'){
+      var obs=fhirObservations(inp);
+      for(var i=0;i<obs.length;i++) await fhirPost(obs[i]);
+      results.push('Vitals/GCS ('+obs.length+') ✅');
+    }
+    var ms=Date.now()-start;
+    if(stEl) stEl.innerHTML='<div style="color:#2E7D32;font-weight:700;font-size:11px;">'+results.join(' · ')+'</div><div style="font-size:9px;color:var(--muted);">ใช้เวลา '+ms+' ms · '+new Date().toLocaleTimeString('th-TH')+'</div>';
+    if(btn){btn.disabled=false;btn.textContent='✅ ส่งสำเร็จ';btn.style.background='#2E7D32';}
+  } catch(err){
+    console.error('FHIR error:',err);
+    if(stEl) stEl.innerHTML='<div style="color:var(--red);font-size:11px;">❌ ส่งไม่สำเร็จ: '+err.message+'</div><div style="font-size:9px;color:var(--muted);">ตรวจสอบ URL / Token / CORS policy ของ server</div>';
+    if(btn){btn.disabled=false;btn.textContent='🔗 ลองอีกครั้ง';btn.style.background='#C62828';}
+  }
+}
+</script>
+
+<!-- ══ MOBILE BOTTOM NAV ══ -->
+<nav class="mob-nav" id="mob-nav">
+  <div class="mob-nav-inner">
+    <button class="mnb active" id="mnb-form" onclick="mobTab('form')">
+      <span class="mico">📋</span>ประเมิน
+    </button>
+    <button class="mnb" id="mnb-result" onclick="mobTab('result')">
+      <span class="mico">🎯</span>ผลลัพธ์<span class="mob-badge" id="mob-res-badge">!</span>
+    </button>
+    <button class="mnb" id="mnb-history" onclick="mobTab('history')">
+      <span class="mico">📋</span>ประวัติ
+    </button>
+    <button class="mnb" id="mnb-settings" onclick="openSetup()">
+      <span class="mico">⚙️</span>ตั้งค่า
+    </button>
+  </div>
+</nav>
+
+<script>
+// ══ MOBILE TAB NAVIGATION ══
+var isMobile = window.innerWidth <= 840;
+
+function checkMobile(){
+  isMobile = window.innerWidth <= 840;
+  if(!isMobile){
+    // desktop: show both panels
+    var l = document.querySelector('.left');
+    var r = document.querySelector('.right');
+    if(l){ l.style.display=''; l.classList.remove('mob-show'); }
+    if(r){ r.style.display=''; r.classList.remove('mob-show'); }
+  } else {
+    // mobile: default show form
+    mobTab(window._mobActive||'form');
+  }
+}
+
+window._mobActive = 'form';
+
+function mobTab(tab){
+  if(window.innerWidth > 840) return;
+  window._mobActive = tab;
+  var left  = document.querySelector('.left');
+  var right = document.querySelector('.right');
+  var btns  = document.querySelectorAll('.mnb');
+  btns.forEach(function(b){ b.classList.remove('active'); });
+
+  if(tab === 'form'){
+    if(left)  { left.style.display='flex';  left.classList.add('mob-show'); }
+    if(right) { right.style.display='none'; right.classList.remove('mob-show'); }
+    document.getElementById('mnb-form').classList.add('active');
+  } else if(tab === 'result'){
+    if(left)  { left.style.display='none'; left.classList.remove('mob-show'); }
+    if(right) { right.style.display='flex'; right.classList.add('mob-show'); }
+    document.getElementById('mnb-result').classList.add('active');
+    // ซ่อน badge
+    var b = document.getElementById('mob-res-badge');
+    if(b) b.classList.remove('on');
+  } else if(tab === 'history'){
+    if(left)  { left.style.display='none'; left.classList.remove('mob-show'); }
+    if(right) { right.style.display='flex'; right.classList.add('mob-show'); }
+    document.getElementById('mnb-history').classList.add('active');
+    // scroll to patient list
+    var pl = document.getElementById('pt-list');
+    if(pl) pl.scrollIntoView({behavior:'smooth'});
+  }
+}
+
+// เมื่อประเมินเสร็จ → mobile กระโดดไปหน้า result อัตโนมัติ + แสดง badge
+var _origShowRes = showRes;
+showRes = function(inp){
+  _origShowRes(inp);
+  if(window.innerWidth <= 840){
+    // แสดง badge ก่อน แล้วค่อย switch หลัง animation เสร็จ
+    var b = document.getElementById('mob-res-badge');
+    if(b) b.classList.add('on');
+    setTimeout(function(){ mobTab('result'); }, 600);
+  }
+};
+
+window.addEventListener('resize', checkMobile);
+window.addEventListener('load', function(){
+  checkMobile();
+  // เพิ่ม safe area padding ถ้า iOS
+  var nav = document.getElementById('mob-nav');
+  if(nav && /iPhone|iPad/.test(navigator.userAgent)){
+    nav.style.paddingBottom = 'env(safe-area-inset-bottom, 16px)';
+  }
+});
+</script>
+<footer style="text-align:center;padding:14px 16px 18px;font-size:11px;color:rgba(255,255,255,.55);background:var(--navy);letter-spacing:.3px;line-height:1.7;border-top:1px solid rgba(255,255,255,.08);">
+  <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,.85);margin-bottom:2px;">ระบบ Triage โรงพยาบาลพระนครศรีอยุธยา</div>
+  <div>ลิขสิทธิ์ของ <strong style="color:rgba(255,255,255,.9);">นพ.วสันต์ ลิ่มสุริยกานต์</strong></div>
+  <div style="font-size:9px;margin-top:3px;color:rgba(255,255,255,.35);">ห้ามทำซ้ำ ดัดแปลง หรือเผยแพร่โดยไม่ได้รับอนุญาต</div>
+</footer>
+</body>
+</html>
